@@ -8,8 +8,8 @@ import {
 const router = Router();
 
 router.post("/subscribe", createSubscription);
-router.post("/cancel", disableSubscription);
-router.get("/list/:email", listSubscriptions);
+router.post("/disable", disableSubscription);
+router.get("/list", listSubscriptions);
 
 export default router;
 
