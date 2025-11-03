@@ -1,4 +1,4 @@
-import { paystack } from "../config/paystackConfig.js";
+import paystack from "../config/paystackConfig.js";
 
 export const verifyPayment = async (req, res, next) => {
   try {

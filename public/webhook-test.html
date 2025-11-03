@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Webhook Logs</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #f3f6fc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        color: #222;
+      }
+
+      h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        color: #1a1a1a;
+        text-align: center;
+      }
+
+      .log-box {
+        background: #fff;
+        padding: 2rem 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      button {
+        padding: 0.9rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        background: #6f42c1;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.1s ease;
+      }
+
+      button:hover {
+        background: #5a32a3;
+        transform: translateY(-2px);
+      }
+
+      pre {
+        /* background: #1e1e1e; */
+        color: #dc3545;
+        padding: 1rem;
+        border-radius: 8px;
+        width: 100%;
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      footer {
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        color: #777;
+      }
+
+      footer a {
+        color: #6f42c1;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>🟣 Paystack Webhook Logs</h2>
+
+    <div class="log-box">
+      <button id="refresh">Refresh Logs</button>
+      <pre id="logs">⏳ Loading webhook logs...</pre>
+    </div>
+
+    <footer>
+      <p><a href="index.html">← Back to Dashboard</a></p>
+    </footer>
+
+    <script>
+      async function loadLogs() {
+        const logsEl = document.getElementById("logs");
+        logsEl.textContent = "⏳ Fetching latest logs...";
+
+        try {
+          const res = await fetch("/api/webhook/logs");
+          const data = await res.json();
+
+          if (!data || data.length === 0) {
+            logsEl.textContent = "⚠️ No logs available yet.";
+            return;
+          }
+
+          logsEl.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          logsEl.textContent =
+            "❌ Error loading webhook logs. Please try again.";
+        }
+      }
+
+      document.getElementById("refresh").addEventListener("click", loadLogs);
+      loadLogs();
+    </script>
+  </body>
+</html>

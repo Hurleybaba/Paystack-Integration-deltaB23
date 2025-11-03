@@ -11,14 +11,21 @@ dotenv.config();
 
 
 const app = express();
+app.use(express.static("public"));
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
 
+
 // Routes
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/payments', paymentRoutes);
+app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: './public' });
+});
+
+
 
 // Error Handling Middleware
 app.use(errorHandler);
