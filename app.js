@@ -1,14 +1,16 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import subscriptionRoutes from "./routes/subscriptionRoutes.js"
 
 dotenv.config();
 
 
 const app = express();
 app.use(express.json());
-const PORT = process.env.PORT || 3000;
 
+// Routes
+app.use('api/subcriptions', subscriptionRoutes)
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.listen(process.env.PORT || 5001, () => {
+  console.log(`Server is running on port ${process.env.PORT || 5001}`);
 });
