@@ -10,8 +10,8 @@ import webhookRoutes from "./routes/webhookRoutes.js";
 
 dotenv.config();
 const app = express();
+app.use("/api/webhook", webhookRoutes);
 app.use(express.static("public"));
-app.use("/api", webhookRoutes);
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
@@ -19,11 +19,15 @@ app.use(bodyParser.json());
 // Routes
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
-app.use("/api/webhooks", webhookRoutes);
+
 
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "./public" });
 });
+
+app.get("/", (req,res)=>{
+  res.send("Paystack Webhook Active")
+})
 
 // Error Handling Middleware
 app.use(errorHandler);
