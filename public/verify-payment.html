@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Verify Payment</title>
+
     <style>
       * {
         box-sizing: border-box;
@@ -189,7 +190,7 @@
     <footer>
       <p><a href="index.html">← Back to Dashboard</a></p>
     </footer>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment-with-locales.min.js"></script>
     <script>
       document.getElementById("verify").addEventListener("click", async () => {
         const ref = document.getElementById("ref").value.trim();
@@ -217,7 +218,7 @@
             document.getElementById("email").textContent = tx.customer.email;
             document.getElementById("channel").textContent = tx.channel;
             document.getElementById("currency").textContent = tx.currency;
-            document.getElementById("paidAt").textContent = new Date(tx.paidAt).toLocaleString();
+            document.getElementById("paidAt").textContent = new Date(tx.paidAt).moment().format('MMMM Do YYYY, h:mm:ss a');
             document.getElementById("amount").textContent = `${tx.currency} ${(tx.amount / 100).toFixed(2)}`;
 
             errorEl.textContent = "";
