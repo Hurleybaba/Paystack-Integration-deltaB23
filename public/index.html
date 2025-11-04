@@ -1,109 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Paystack API Test Dashboard</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: "Poppins", sans-serif;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>Paystack API Test Dashboard</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Poppins", sans-serif;
+      }
 
-    body {
-      background: #f3f6fc;
-      color: #222;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      flex-direction: column;
-    }
+      body {
+        background: #f3f6fc;
+        color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        flex-direction: column;
+      }
 
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 1.5rem;
-      color: #1a1a1a;
-      text-align: center;
-      letter-spacing: 0.5px;
-    }
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        color: #1a1a1a;
+        text-align: center;
+        letter-spacing: 0.5px;
+      }
 
-    ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      width: 100%;
-      max-width: 400px;
-    }
+      ul {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(
+          2,
+          minmax(200px, 1fr)
+        ); /* 🔥 two equal columns */
+        gap: 1rem;
+        width: 100%;
+        max-width: 800px; /* widened a bit to fit two columns nicely */
+        margin: 2rem auto;
+        padding: 0;
+      }
 
-    li {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+      li {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
 
-    li:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-    }
+      li:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+      }
 
-    a {
-      display: block;
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 1.05rem;
-      color: #fff;
-      padding: 1rem 1.2rem;
-      transition: background 0.3s ease;
-    }
+      a {
+        display: block;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 1.05rem;
+        color: #fff;
+        padding: 1rem 1.2rem;
+        transition: background 0.3s ease;
+      }
 
-    /* Individual link colors */
-    li:nth-child(1) a {
-      background: #28a745; /* green */
-    }
-    li:nth-child(1):hover a {
-      background: #218838;
-    }
+      /* Individual link colors */
 
-    li:nth-child(2) a {
-      background: #007bff; /* blue */
-    }
-    li:nth-child(2):hover a {
-      background: #0069d9;
-    }
+      /* Payments */
+      li:nth-child(1) a {
+        background: #28a745; /* green - initialize payment */
+      }
+      li:nth-child(1):hover a {
+        background: #218838;
+      }
 
-    li:nth-child(3) a {
-      background: #6f42c1; /* purple */
-    }
-    li:nth-child(3):hover a {
-      background: #5a32a3;
-    }
+      li:nth-child(2) a {
+        background: #007bff; /* blue - verify payment */
+      }
+      li:nth-child(2):hover a {
+        background: #0069d9;
+      }
 
-    footer {
-      margin-top: 2rem;
-      font-size: 0.85rem;
-      color: #777;
-    }
+      li:nth-child(3) a {
+        background: #6f42c1; /* purple - webhook */
+      }
+      li:nth-child(3):hover a {
+        background: #5a32a3;
+      }
 
-    footer span {
-      font-weight: 500;
-    }
-  </style>
-</head>
-<body>
-  <h1>⚙️ Delta Team Paystack API Test Dashboard</h1>
-  <ul>
-    <li><a href="test-payment.html">🟢 Initialize Payment</a></li>
-    <li><a href="verify-payment.html">🔵 Verify Payment</a></li>
-    <li><a href="webhook-test.html">🟣 Webhook Log Viewer</a></li>
-  </ul>
+      /* Subscriptions */
+      li:nth-child(4) a {
+        background: #fd7e14; /* orange - create subscription */
+      }
+      li:nth-child(4):hover a {
+        background: #e06a0e;
+      }
 
-  <footer>
-    <p>Built by <span>Delta Team</span> — Paystack Integration Test</p>
-  </footer>
-</body>
+      li:nth-child(5) a {
+        background: #20c997; /* teal - list subscriptions */
+      }
+      li:nth-child(5):hover a {
+        background: #17a589;
+      }
+
+      li:nth-child(6) a {
+        background: #dc3545; /* red - delete subscription */
+      }
+      li:nth-child(6):hover a {
+        background: #b02a37;
+      }
+
+      /* Plans */
+      li:nth-child(7) a {
+        background: #6610f2; /* indigo - create plan */
+      }
+      li:nth-child(7):hover a {
+        background: #520dc2;
+      }
+
+      li:nth-child(8) a {
+        background: #0dcaf0; /* cyan - view plans */
+      }
+      li:nth-child(8):hover a {
+        background: #0aa2c0;
+      }
+
+      li:nth-child(9) a {
+        background: #e83e8c; /* pink - delete plan */
+      }
+      li:nth-child(9):hover a {
+        background: #c2236d;
+      }
+
+      footer {
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        color: #777;
+      }
+
+      footer span {
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>⚙️ Delta Team Paystack API Test Dashboard</h1>
+    <ul>
+      <!-- Payments -->
+      <li><a href="test-payment.html">🟢 Initialize Payment</a></li>
+      <li><a href="verify-payment.html">🔵 Verify Payment</a></li>
+      <li><a href="webhook-test.html">🟣 Webhook Log Viewer</a></li>
+
+      <!-- Subscriptions -->
+      <li><a href="create-subscription.html">🟠 Create Subscription</a></li>
+      <li><a href="list-subscriptions.html"> 🟢 List Subscriptions</a></li>
+      <li><a href="delete-subscription.html">🔴 Delete Subscription</a></li>
+
+      <!-- Plans -->
+      <li><a href="create-plan.html">🟣 Create Plan</a></li>
+      <li><a href="list-plans.html">💠 View Plans</a></li>
+      <li><a href="delete-plan.html">💔 Delete Plan</a></li>
+    </ul>
+
+    <footer>
+      <p>Built by <span>Delta Team</span> — Paystack Integration Test</p>
+    </footer>
+  </body>
 </html>
