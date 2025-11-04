@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import planRoutes from "./routes/planRoutes.js"
 import { errorHandler } from "./middlewares/errorHandler.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 
 // Routes
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/plans", planRoutes)
 app.use("/api/payments", paymentRoutes);
 
 

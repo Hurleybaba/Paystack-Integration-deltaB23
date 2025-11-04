@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Create Plan</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <h2>🟣 Create New Plans</h2>
+
+    <div class="verify-box">
+      <input id="name" placeholder="Plan name" />
+      <input id="amount" placeholder="Amount (in kobo)" />
+      <input id="interval" placeholder="Interval (e.g., monthly, weekly)" />
+      <button id="create">Create Plan</button>
+    </div>
+
+    <pre id="result"></pre>
+
+    <footer>
+      <p><a href="index.html">← Back to Dashboard</a></p>
+    </footer>
+
+    <script>
+      document.getElementById("create").addEventListener("click", async () => {
+        const name = document.getElementById("name").value.trim();
+        const amount = document.getElementById("amount").value.trim();
+        const interval = document.getElementById("interval").value.trim();
+        const resultEl = document.getElementById("result");
+
+        if (!name || !amount || !interval) {
+          resultEl.textContent = "⚠️ Please fill in all fields.";
+          return;
+        }
+
+        resultEl.textContent = "⏳ Creating plan...";
+
+        try {
+          const res = await fetch("/api/plans/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, amount, interval }),
+          });
+          const data = await res.json();
+          resultEl.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+          resultEl.textContent = "❌ Error creating plan.";
+        }
+      });
+    </script>
+  </body>
+</html>
