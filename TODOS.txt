@@ -1,0 +1,9 @@
+Tasks for tonight
+
+1. Generate the routes and controller for Plans
+
+2. Refactor the webhooks, add /logs to view all logs
+
+3. Work on the signature validation middleware
+
+4. MomentJs to refactor the pages
