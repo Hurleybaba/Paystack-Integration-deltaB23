@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 // Routes
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/payments", paymentRoutes);
-app.use("/api/hooks", webhookRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "./public" });

@@ -108,7 +108,7 @@
         logsEl.textContent = "⏳ Fetching latest logs...";
 
         try {
-          const res = await fetch("/api/webhook/logs");
+          const res = await fetch("/api/webhooks");
           const data = await res.json();
 
           if (!data || data.length === 0) {

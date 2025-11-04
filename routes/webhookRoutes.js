@@ -4,7 +4,7 @@ import crypto from "crypto";
 const router = express.Router();
 
 // Paystack webhook endpoint
-router.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
+router.post("/", express.raw({ type: "application/json" }), (req, res) => {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const hash = crypto
     .createHmac("sha512", secret)

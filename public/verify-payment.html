@@ -16,9 +16,10 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         min-height: 100vh;
         color: #222;
+        padding: 2rem 1rem;
       }
 
       h2 {
@@ -38,6 +39,7 @@
         display: flex;
         flex-direction: column;
         gap: 1rem;
+        margin-bottom: 2rem;
       }
 
       input {
@@ -71,21 +73,6 @@
         transform: translateY(-2px);
       }
 
-      pre {
-        /* background: #1e1e1e; */
-        color: #dc3545;
-        padding: 1rem;
-        border-radius: 8px;
-        width: 100%;
-        max-width: 450px;
-        margin-top: 1rem;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-break: break-word;
-        font-size: 0.9rem;
-        text-align: center;
-      }
-
       footer {
         margin-top: 2rem;
         font-size: 0.85rem;
@@ -101,6 +88,75 @@
       footer a:hover {
         text-decoration: underline;
       }
+
+      /* Receipt Styles */
+      .receipt-container {
+        display: none;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        width: 100%;
+        max-width: 450px;
+        text-align: center;
+      }
+
+      .success-icon {
+        font-size: 40px;
+        color: #22bb33;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        font-size: 1.4rem;
+        color: #22bb33;
+        margin-bottom: 0.5rem;
+      }
+
+      .amount {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .divider {
+        border-top: 1px solid #e3e3e3;
+        margin: 15px 0;
+      }
+
+      .info {
+        text-align: left;
+      }
+
+      .info p {
+        display: flex;
+        justify-content: space-between;
+        margin: 6px 0;
+        font-size: 0.95rem;
+      }
+
+      .label {
+        color: #777;
+      }
+
+      .value {
+        font-weight: 500;
+        color: #333;
+      }
+
+      .footer-msg {
+        margin-top: 25px;
+        font-size: 0.85rem;
+        color: #888;
+      }
+
+      .error {
+        color: #d9534f;
+        text-align: center;
+        font-weight: 500;
+        margin-top: 1rem;
+      }
     </style>
   </head>
   <body>
@@ -109,9 +165,26 @@
     <div class="verify-box">
       <input id="ref" placeholder="Transaction reference" />
       <button id="verify">Verify Payment</button>
+      <div id="error" class="error"></div>
     </div>
 
-    <pre id="result"></pre>
+    <!-- Receipt container -->
+    <div class="receipt-container" id="receipt">
+      <div class="success-icon">✅</div>
+      <h3>Payment Successful</h3>
+      <div class="amount" id="amount">$0.00</div>
+      <div class="divider"></div>
+      <div class="info">
+        <p><span class="label">Status:</span> <span class="value" id="status"></span></p>
+        <p><span class="label">Reference:</span> <span class="value" id="reference"></span></p>
+        <p><span class="label">Customer Email:</span> <span class="value" id="email"></span></p>
+        <p><span class="label">Payment Channel:</span> <span class="value" id="channel"></span></p>
+        <p><span class="label">Currency:</span> <span class="value" id="currency"></span></p>
+        <p><span class="label">Paid At:</span> <span class="value" id="paidAt"></span></p>
+      </div>
+      <div class="divider"></div>
+      <div class="footer-msg">Thank you for your payment!<br />Paystack Test Environment</div>
+    </div>
 
     <footer>
       <p><a href="index.html">← Back to Dashboard</a></p>
@@ -120,23 +193,40 @@
     <script>
       document.getElementById("verify").addEventListener("click", async () => {
         const ref = document.getElementById("ref").value.trim();
-        const resultEl = document.getElementById("result");
+        const receipt = document.getElementById("receipt");
+        const errorEl = document.getElementById("error");
+
+        errorEl.textContent = "";
+        receipt.style.display = "none";
 
         if (!ref) {
-          resultEl.textContent = "⚠️ Please enter a transaction reference.";
+          errorEl.textContent = "⚠️ Please enter a transaction reference.";
           return;
         }
 
-        resultEl.textContent = "⏳ Verifying transaction...";
+        errorEl.textContent = "⏳ Verifying transaction...";
 
         try {
-          const res = await fetch(`/api/payment/verify/${ref}`);
+          const res = await fetch(`/api/payments/verify/${ref}`);
           const data = await res.json();
 
-          resultEl.textContent = JSON.stringify(data, null, 2);
+          if (data.success && data.data && data.data.data.status === "success") {
+            const tx = data.data.data;
+            document.getElementById("status").textContent = tx.status;
+            document.getElementById("reference").textContent = tx.reference;
+            document.getElementById("email").textContent = tx.customer.email;
+            document.getElementById("channel").textContent = tx.channel;
+            document.getElementById("currency").textContent = tx.currency;
+            document.getElementById("paidAt").textContent = new Date(tx.paidAt).toLocaleString();
+            document.getElementById("amount").textContent = `${tx.currency} ${(tx.amount / 100).toFixed(2)}`;
+
+            errorEl.textContent = "";
+            receipt.style.display = "block";
+          } else {
+            errorEl.textContent = "❌ Payment not found or failed.";
+          }
         } catch (err) {
-          resultEl.textContent =
-            "❌ Error verifying payment. Please try again.";
+          errorEl.textContent = "❌ Error verifying payment. Please try again.";
         }
       });
     </script>
