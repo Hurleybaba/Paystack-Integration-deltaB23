@@ -12,6 +12,7 @@ import webhookRoutes from "./routes/webhookRoutes.js"
 dotenv.config();
 const app = express();
 app.use(express.static("public"));
+app.use("/api", webhookRoutes);
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
@@ -33,11 +34,7 @@ app.use(errorHandler);
 
 
 app.listen(process.env.PORT || 5001, () => {
-  console.log(`Server is running on port ${process.env.PORT || 5001}`)});
-app.use("/api", webhookRoutes);
+  console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`)});
 const PORT = process.env.PORT || 3000;
 
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
