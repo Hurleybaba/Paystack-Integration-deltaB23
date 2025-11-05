@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Paystack webhook endpoint (must use raw body parser)
 router.post(
-  "/webhook",
+  "/",
   express.raw({ type: "application/json" }),
   paystackWebhook
 );
