@@ -9,7 +9,6 @@ export const verifyPayment = async (req, res, next) => {
     console.log("Paystack verify response:", response.data);
 
     res.status(200).json({ success: true, data: response.data });
-
   } catch (err) {
     next(err);
   }
@@ -20,7 +19,9 @@ export const initializePayment = async (req, res, next) => {
     const { email, amount } = req.body;
 
     if (!email || !amount)
-      return res.status(400).json({ success: false, message: "Email and amount are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and amount are required" });
 
     const response = await paystack.post("/transaction/initialize", {
       email,

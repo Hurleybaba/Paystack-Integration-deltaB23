@@ -176,15 +176,35 @@
       <div class="amount" id="amount">$0.00</div>
       <div class="divider"></div>
       <div class="info">
-        <p><span class="label">Status:</span> <span class="value" id="status"></span></p>
-        <p><span class="label">Reference:</span> <span class="value" id="reference"></span></p>
-        <p><span class="label">Customer Email:</span> <span class="value" id="email"></span></p>
-        <p><span class="label">Payment Channel:</span> <span class="value" id="channel"></span></p>
-        <p><span class="label">Currency:</span> <span class="value" id="currency"></span></p>
-        <p><span class="label">Paid At:</span> <span class="value" id="paidAt"></span></p>
+        <p>
+          <span class="label">Status:</span>
+          <span class="value" id="status"></span>
+        </p>
+        <p>
+          <span class="label">Reference:</span>
+          <span class="value" id="reference"></span>
+        </p>
+        <p>
+          <span class="label">Customer Email:</span>
+          <span class="value" id="email"></span>
+        </p>
+        <p>
+          <span class="label">Payment Channel:</span>
+          <span class="value" id="channel"></span>
+        </p>
+        <p>
+          <span class="label">Currency:</span>
+          <span class="value" id="currency"></span>
+        </p>
+        <p>
+          <span class="label">Paid At:</span>
+          <span class="value" id="paidAt"></span>
+        </p>
       </div>
       <div class="divider"></div>
-      <div class="footer-msg">Thank you for your payment!<br />Paystack Test Environment</div>
+      <div class="footer-msg">
+        Thank you for your payment!<br />Paystack Test Environment
+      </div>
     </div>
 
     <footer>
@@ -211,15 +231,27 @@
           const res = await fetch(`/api/payments/verify/${ref}`);
           const data = await res.json();
 
-          if (data.success && data.data && data.data.data.status === "success") {
+          console.log("TYPE OF DATA:", typeof data);
+
+          console.log("FULL RESPONSE:", res);
+
+          if (
+            data.success &&
+            data.data &&
+            data.data.data.status === "success"
+          ) {
             const tx = data.data.data;
             document.getElementById("status").textContent = tx.status;
             document.getElementById("reference").textContent = tx.reference;
             document.getElementById("email").textContent = tx.customer.email;
             document.getElementById("channel").textContent = tx.channel;
             document.getElementById("currency").textContent = tx.currency;
-            document.getElementById("paidAt").textContent = new Date(tx.paidAt).moment().format('MMMM Do YYYY, h:mm:ss a');
-            document.getElementById("amount").textContent = `${tx.currency} ${(tx.amount / 100).toFixed(2)}`;
+            document.getElementById("paidAt").textContent = new Date(tx.paidAt)
+              .moment()
+              .format("MMMM Do YYYY, h:mm:ss a");
+            document.getElementById("amount").textContent = `${tx.currency} ${(
+              tx.amount / 100
+            ).toFixed(2)}`;
 
             errorEl.textContent = "";
             receipt.style.display = "block";

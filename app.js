@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
-import planRoutes from "./routes/planRoutes.js"
+import planRoutes from "./routes/planRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 
@@ -15,11 +15,11 @@ app.use(express.static("public"));
 app.use("/api", webhookRoutes);
 app.use(express.json());
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/subscriptions", subscriptionRoutes);
-app.use("/api/plans", planRoutes)
+app.use("/api/plans", planRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/webhooks", webhookRoutes);
 
@@ -32,9 +32,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-
 app.listen(process.env.PORT || 5001, () => {
-  console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`)});
-
-
-
+  console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`);
+});
