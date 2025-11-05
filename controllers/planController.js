@@ -12,7 +12,6 @@ export const createPlan = async (req, res) => {
       description,
       send_invoices,
       send_sms,
-      currency,
       invoice_limit,
     } = req.body;
 
@@ -25,19 +24,18 @@ export const createPlan = async (req, res) => {
 
     const body = {
       name,
-      amount,
+      amount: amount * 100, // Convert to kobo
       interval,
+      currency: "NGN", // ✅ Always use NGN
     };
+
     if (description !== undefined) body.description = description;
     if (send_invoices !== undefined) body.send_invoices = send_invoices;
     if (send_sms !== undefined) body.send_sms = send_sms;
-    if (currency !== undefined) body.currency = currency;
     if (invoice_limit !== undefined) body.invoice_limit = invoice_limit;
 
     const response = await paystack.post("/plan", body);
     const data = response.data.data;
-
-    // Optionally: store plan record in your DB
 
     return res.status(201).json({
       status: true,
@@ -53,6 +51,7 @@ export const createPlan = async (req, res) => {
     });
   }
 };
+
 
 /**
  * List Plans (with optional filters)
@@ -146,7 +145,7 @@ export const updatePlan = async (req, res) => {
 
     const body = {};
     if (name !== undefined) body.name = name;
-    if (amount !== undefined) body.amount = amount;
+    if (amount !== undefined) body.amount = amount * 100;
     if (interval !== undefined) body.interval = interval;
     if (description !== undefined) body.description = description;
     if (send_invoices !== undefined) body.send_invoices = send_invoices;

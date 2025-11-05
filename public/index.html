@@ -32,13 +32,10 @@
       ul {
         list-style: none;
         display: grid;
-        grid-template-columns: repeat(
-          2,
-          minmax(200px, 1fr)
-        ); /* 🔥 two equal columns */
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
         gap: 1rem;
         width: 100%;
-        max-width: 800px; /* widened a bit to fit two columns nicely */
+        max-width: 800px;
         margin: 2rem auto;
         padding: 0;
       }
@@ -66,77 +63,62 @@
         transition: background 0.3s ease;
       }
 
-      /* Individual link colors */
-
-      /* Payments */
+      /* === Payments === */
       li:nth-child(1) a {
-        background: #28a745; /* green - initialize payment */
+        background: #28a745;
       }
       li:nth-child(1):hover a {
         background: #218838;
       }
 
       li:nth-child(2) a {
-        background: #007bff; /* blue - verify payment */
+        background: #007bff;
       }
       li:nth-child(2):hover a {
         background: #0069d9;
       }
 
+      /* === Subscriptions === */
       li:nth-child(3) a {
-        background: #6f42c1; /* purple - webhook */
+        background: #fd7e14;
       }
       li:nth-child(3):hover a {
-        background: #5a32a3;
-      }
-
-      /* Subscriptions */
-      li:nth-child(4) a {
-        background: #fd7e14; /* orange - create subscription */
-      }
-      li:nth-child(4):hover a {
         background: #e06a0e;
       }
 
-      li:nth-child(5) a {
-        background: #20c997; /* teal - list subscriptions */
+      li:nth-child(4) a {
+        background: #20c997;
       }
-      li:nth-child(5):hover a {
+      li:nth-child(4):hover a {
         background: #17a589;
       }
 
-      li:nth-child(6) a {
-        background: #dc3545; /* red - delete subscription */
+      li:nth-child(5) a {
+        background: #dc3545;
       }
-      li:nth-child(6):hover a {
+      li:nth-child(5):hover a {
         background: #b02a37;
       }
-      li:nth-child(7) a {
-        background: #007bff; /* blue - verify payment */
+
+      /* === Plans === */
+      li:nth-child(6) a {
+        background: #0dcaf0;
       }
-      li:nth-child(7):hover a {
-        background: #0069d9;
+      li:nth-child(6):hover a {
+        background: #0aa2c0;
       }
 
-      /* Plans */
-      li:nth-child(10) a {
-        background: #6610f2; /* indigo - create plan */
+      li:nth-child(7) a {
+        background: #6610f2;
       }
-      li:nth-child(10):hover a {
+      li:nth-child(7):hover a {
         background: #520dc2;
       }
 
       li:nth-child(8) a {
-        background: #0dcaf0; /* cyan - view plans */
+        background: #e83e8c;
       }
       li:nth-child(8):hover a {
-        background: #0aa2c0;
-      }
-
-      li:nth-child(9) a {
-        background: #e83e8c; /* pink - delete plan */
-      }
-      li:nth-child(9):hover a {
         background: #c2236d;
       }
 
@@ -157,17 +139,16 @@
       <!-- Payments -->
       <li><a href="test-payment.html">🟢 Initialize Payment</a></li>
       <li><a href="verify-payment.html">🔵 Verify Payment</a></li>
-      <li><a href="webhook-test.html">🟣 Webhook Log Viewer</a></li>
 
       <!-- Subscriptions -->
       <li><a href="create-subscription.html">🟠 Create Subscription</a></li>
-      <li><a href="list-subscriptions.html"> 🟢 List Subscriptions</a></li>
+      <li><a href="list-subscriptions.html">🟢 List Subscriptions</a></li>
       <li><a href="delete-subscription.html">🔴 Delete Subscription</a></li>
 
       <!-- Plans -->
-      <li><a href="list-transactions.html">🔵 List transactions</a></li>
+      <li><a href="list-transactions.html">💠 List Transactions</a></li>
       <li><a href="create-plan.html">🟣 Create Plan</a></li>
-      <li><a href="list-plans.html">💠 View Plans</a></li>
+      <li><a href="list-plans.html">🔵 View Plans</a></li>
     </ul>
 
     <footer>

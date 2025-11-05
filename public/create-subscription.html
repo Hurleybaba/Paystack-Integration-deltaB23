@@ -191,7 +191,7 @@
           <span class="value" id="r-email"></span>
         </p>
         <p>
-          <span class="label">Plan:</span>
+          <span class="label">Plan Code:</span>
           <span class="value" id="r-plan"></span>
         </p>
         <p>
@@ -257,10 +257,12 @@
           const data = await res.json();
           spinner.style.display = "none";
 
+          console.log("Create Subscription Response:", data);
+
           if (data.success || data.status || data.data) {
             const sub = data.data;
-            document.getElementById("r-email").textContent = sub.customer.email;
-            document.getElementById("r-plan").textContent = sub.plan.plan_code;
+            document.getElementById("r-email").textContent = data.email;
+            document.getElementById("r-plan").textContent = data.plan;
             document.getElementById("r-status").textContent = sub.status;
             document.getElementById("r-code").textContent =
               sub.subscription_code;

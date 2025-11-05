@@ -32,6 +32,7 @@ export const initializePayment = async (req, res, next) => {
     const response = await paystack.post("/transaction/initialize", {
       email,
       amount: amount * 100, // Convert to kobo
+      currency: "NGN",
     });
 
     res.status(200).json({ success: true, data: response.data });

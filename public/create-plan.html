@@ -42,7 +42,8 @@
         margin-bottom: 2rem;
       }
 
-      input {
+      input,
+      select {
         padding: 0.9rem 1rem;
         border: 1px solid #ddd;
         border-radius: 8px;
@@ -51,7 +52,8 @@
         transition: border 0.2s ease;
       }
 
-      input:focus {
+      input:focus,
+      select:focus {
         border-color: #6f42c1;
         box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.1);
       }
@@ -89,7 +91,6 @@
         text-decoration: underline;
       }
 
-      /* Spinner */
       .spinner {
         margin: 1rem auto;
         width: 28px;
@@ -101,11 +102,14 @@
       }
 
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
-      /* Receipt */
       .receipt-container {
         display: none;
         background: #fff;
@@ -174,14 +178,25 @@
 
     <div class="verify-box" id="formBox">
       <input id="name" placeholder="Plan name" />
-      <input id="amount" type="number" placeholder="Amount (in kobo)" />
-      <input id="interval" placeholder="Interval (e.g., monthly, weekly)" />
+      <input id="amount" type="number" placeholder="Amount (in NGN)" />
+
+      <!-- ✅ Dropdown for interval -->
+      <select id="interval">
+        <option value="">Select Interval</option>
+        <option value="hourly">Hourly</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="biannually">Biannually (every 6 months)</option>
+        <option value="annually">Annually</option>
+      </select>
+
       <button id="create">Create Plan</button>
       <div id="spinner" class="spinner" style="display: none"></div>
       <div id="error" class="error"></div>
     </div>
 
-    <!-- Receipt -->
     <div class="receipt-container" id="receipt">
       <div class="success-icon">✅</div>
       <h3>Plan Created Successfully!</h3>
@@ -237,11 +252,16 @@
             const plan = data.data;
             formBox.style.display = "none";
             document.getElementById("r_name").textContent = plan.name;
-            document.getElementById("r_amount").textContent = `${plan.currency || "NGN"} ${(plan.amount / 100).toFixed(2)}`;
+            document.getElementById("r_amount").textContent = `${
+              plan.currency || "NGN"
+            } ${(plan.amount / 100).toFixed(2)}`;
             document.getElementById("r_interval").textContent = plan.interval;
-            document.getElementById("r_currency").textContent = plan.currency || "NGN";
+            document.getElementById("r_currency").textContent =
+              plan.currency || "NGN";
             document.getElementById("r_code").textContent = plan.plan_code;
-            document.getElementById("r_created").textContent = moment(plan.createdAt).format("MMMM Do YYYY, h:mm:ss a");
+            document.getElementById("r_created").textContent = moment(
+              plan.createdAt
+            ).format("MMMM Do YYYY, h:mm:ss a");
 
             receipt.style.display = "block";
           } else {

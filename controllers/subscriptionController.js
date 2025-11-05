@@ -22,6 +22,10 @@ export const createSubscription = async (req, res) => {
       status: true,
       message: "Subscription successfully created",
       data: data,
+      metadata: {
+        email: customer,
+        plan: plan,
+      }
     });
   } catch (error) {
     console.error("createSubscription Error:", error.response?.data || error);
