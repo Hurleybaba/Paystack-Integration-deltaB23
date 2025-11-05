@@ -1,4 +1,10 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import paystack from "../config/paystackConfig.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const verifyPayment = async (req, res, next) => {
   try {
@@ -36,5 +42,28 @@ export const initializePayment = async (req, res, next) => {
       message: "Error initializing payment",
       error: err.response?.data || err.message,
     });
+  }
+};
+
+export const listTransactions = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const response = await paystack.get(`/transaction?perPage=${limit}&page=${page}`);
+    console.log("Paystack list transactions response:", response.data);
+    res.status(200).json({
+      success: true,
+      data: response.data.data, // array of transactions
+      meta: {
+        page: response.data.meta.page,
+        pageCount: response.data.meta.pageCount,
+        total: response.data.meta.total,
+        next: response.data.meta.next,
+        previous: response.data.meta.previous,
+      },
+    });
+  } catch (err) {
+    next(err);
   }
 };

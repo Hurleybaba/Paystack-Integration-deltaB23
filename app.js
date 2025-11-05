@@ -15,21 +15,20 @@ app.use("/api/webhook", webhookRoutes);
 app.use(express.static("public"));
 app.use(express.json());
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 // Routes
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/payments", paymentRoutes);
 
-
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "./public" });
 });
 
-app.get("/", (req,res)=>{
-  res.send("Paystack Webhook Active")
-})
+app.get("/", (req, res) => {
+  res.send("Paystack Webhook Active");
+});
 
 // Error Handling Middleware
 app.use(errorHandler);

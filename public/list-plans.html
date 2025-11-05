@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>List Plans — Delta Team Paystack</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f5f7fa;
+        color: #333;
+        text-align: center;
+        padding: 2rem;
+      }
+
+      h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        color: #0a2540;
+      }
+
+      #load {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 0.7rem 1.2rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-size: 0.95rem;
+      }
+
+      #load:hover {
+        background: #0069d9;
+      }
+
+      #plans-container {
+        margin-top: 2rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        text-align: left;
+      }
+
+      .plan-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 1.2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+      }
+
+      .plan-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      .plan-card strong {
+        font-size: 1.1rem;
+        color: #111;
+      }
+
+      .plan-meta {
+        font-size: 0.9rem;
+        color: #444;
+        line-height: 1.6;
+        margin-top: 0.5rem;
+      }
+
+      .subscribe-btn {
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: 0.3s;
+      }
+
+      .subscribe {
+        background-color: #28a745;
+        color: white;
+      }
+
+      .subscribe:hover {
+        background-color: #218838;
+      }
+
+      .unsubscribe {
+        background-color: #dc3545;
+        color: white;
+      }
+
+      .unsubscribe:hover {
+        background-color: #c82333;
+      }
+
+      #result {
+        margin-top: 1rem;
+        color: #555;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+      }
+
+      footer {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+      }
+
+      footer a {
+        text-decoration: none;
+        color: #007bff;
+      }
+
+      footer a:hover {
+        text-decoration: underline;
+      }
+
+      .spinner {
+        margin: 2rem auto;
+        width: 30px;
+        height: 30px;
+        border: 4px solid #ccc;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>💠 Available Subscription Plans</h2>
+
+    <button id="load">🔄 Load Plans</button>
+
+    <div id="spinner" class="spinner" style="display: none"></div>
+
+    <div id="plans-container"></div>
+    <pre id="result"></pre>
+
+    <footer>
+      <p><a href="index.html">← Back to Dashboard</a></p>
+    </footer>
+
+    <script>
+      const resultEl = document.getElementById("result");
+      const container = document.getElementById("plans-container");
+      const spinner = document.getElementById("spinner");
+
+      document.getElementById("load").addEventListener("click", loadPlans);
+
+      async function loadPlans() {
+        resultEl.textContent = "";
+        container.innerHTML = "";
+        spinner.style.display = "block";
+
+        try {
+          const res = await fetch("/api/plans/list");
+          const data = await res.json();
+          spinner.style.display = "none";
+
+          console.log("List Plans Response Data:", data);
+
+          if (!data.success && (!data.data || data.data.length === 0)) {
+            resultEl.textContent = "⚠️ No plans found.";
+            return;
+          }
+
+          container.innerHTML = data.data
+            .map(
+              (p) => `
+              <div class="plan-card">
+                <strong>${p.name}</strong>
+                <div class="plan-meta">
+                  💰 Amount: ₦${(p.amount / 100).toLocaleString()} <br>
+                  🔁 Interval: ${p.interval} <br>
+                  🆔 Plan Code: <span style="font-family: monospace;">${
+                    p.plan_code
+                  }</span><br>
+                  👥 Active Subscriptions: ${p.active_subscriptions || 0}
+                </div>
+                <button class="subscribe-btn ${
+                  p.is_subscribed ? "unsubscribe" : "subscribe"
+                }" 
+                  onclick="goToSubscriptionPage('${p.plan_code}', ${
+                p.is_subscribed
+              })">
+                  ${p.is_subscribed ? "Unsubscribe" : "Subscribe"}
+                </button>
+              </div>
+            `
+            )
+            .join("");
+        } catch (err) {
+          spinner.style.display = "none";
+          resultEl.textContent = "❌ Error loading plans.";
+        }
+      }
+
+      function goToSubscriptionPage(planCode, isSubscribed) {
+        if (isSubscribed) {
+          window.location.href = `delete-subscription.html?plan_code=${planCode}`;
+        } else {
+          window.location.href = `create-subscription.html?plan_code=${planCode}`;
+        }
+      }
+    </script>
+  </body>
+</html>

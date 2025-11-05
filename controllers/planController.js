@@ -68,6 +68,7 @@ export const listPlans = async (req, res) => {
     if (amount) params.amount = amount;
 
     const response = await paystack.get("/plan", { params });
+
     const data = response.data.data;
     const meta = response.data.meta;
 

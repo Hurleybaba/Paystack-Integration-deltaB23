@@ -65,6 +65,26 @@
         transform: translateY(-2px);
       }
 
+      .loader {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #d9534f;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        animation: spin 0.8s linear infinite;
+        margin: 1rem auto;
+        display: none;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
       pre {
         color: #333;
         padding: 1rem;
@@ -95,13 +115,15 @@
     </style>
   </head>
   <body>
-    <h2>🔴 Cancel Subscription</h2>
+    <h2>🔴💔 Cancel Subscription</h2>
 
     <div class="form-box">
-      <input id="code" placeholder="Subscription code" />
+      <input id="email" placeholder="User email" />
+      <input id="plan" placeholder="Plan code" />
       <button id="cancel">Cancel Subscription</button>
     </div>
 
+    <div id="loader" class="loader"></div>
     <pre id="result"></pre>
 
     <footer>
@@ -109,27 +131,52 @@
     </footer>
 
     <script>
-      document.getElementById("cancel").addEventListener("click", async () => {
-        const code = document.getElementById("code").value.trim();
-        const resultEl = document.getElementById("result");
+      const emailInput = document.getElementById("email");
+      const planInput = document.getElementById("plan");
+      const loader = document.getElementById("loader");
+      const resultEl = document.getElementById("result");
 
-        if (!code) {
-          resultEl.textContent = "⚠️ Please enter a subscription code.";
+      // Autofill from query params
+      const params = new URLSearchParams(window.location.search);
+      const emailParam = params.get("email");
+      const planCodeParam = params.get("code");
+      if (emailParam) emailInput.value = emailParam;
+      if (planCodeParam) planInput.value = planCodeParam;
+
+      document.getElementById("cancel").addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        const plan_code = planInput.value.trim();
+
+        if (!email || !plan_code) {
+          resultEl.textContent = "⚠️ Please enter both email and plan code.";
           return;
         }
 
-        resultEl.textContent = "⏳ Cancelling subscription...";
+        resultEl.textContent = "";
+        loader.style.display = "block";
 
         try {
-          const res = await fetch("/api/payments/subscriptions/cancel", {
+          const res = await fetch("/api/subscriptions/disable", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ subscription_code: code }),
+            body: JSON.stringify({ email, plan_code }),
           });
+
           const data = await res.json();
-          resultEl.textContent = JSON.stringify(data, null, 2);
+
+          if (data.status) {
+            resultEl.textContent = data.message
+              ? data.message
+              : JSON.stringify(data, null, 2);
+          } else {
+            resultEl.textContent = data.message
+              ? `❌ ${data.error.message}`
+              : "❌ Error cancelling subscription.";
+          }
         } catch (err) {
           resultEl.textContent = "❌ Error cancelling subscription.";
+        } finally {
+          loader.style.display = "none";
         }
       });
     </script>

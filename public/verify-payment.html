@@ -233,7 +233,7 @@
 
           console.log("TYPE OF DATA:", typeof data);
 
-          console.log("FULL RESPONSE:", res);
+          console.log("FULL RESPONSE:", data);
 
           if (
             data.success &&
@@ -246,9 +246,9 @@
             document.getElementById("email").textContent = tx.customer.email;
             document.getElementById("channel").textContent = tx.channel;
             document.getElementById("currency").textContent = tx.currency;
-            document.getElementById("paidAt").textContent = new Date(tx.paidAt)
-              .moment()
-              .format("MMMM Do YYYY, h:mm:ss a");
+            document.getElementById("paidAt").textContent = moment(
+              tx.paidAt
+            ).format("MMMM Do YYYY, h:mm:ss a");
             document.getElementById("amount").textContent = `${tx.currency} ${(
               tx.amount / 100
             ).toFixed(2)}`;

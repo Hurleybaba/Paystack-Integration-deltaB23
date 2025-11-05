@@ -93,16 +93,124 @@
       footer a:hover {
         text-decoration: underline;
       }
+      /* Spinner */
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #ff9500;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-top: 1.5rem;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Receipt Section */
+      .receipt-container {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 450px;
+        margin-top: 1.5rem;
+        text-align: center;
+        animation: fadeIn 0.4s ease;
+      }
+
+      .success-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+
+      .divider {
+        height: 1px;
+        background: #eee;
+        margin: 1rem 0;
+      }
+
+      .info p {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        padding: 0.4rem 0;
+        border-bottom: 1px dashed #f1f1f1;
+      }
+
+      .info .label {
+        font-weight: 600;
+        color: #555;
+      }
+
+      .info .value {
+        color: #222;
+      }
+
+      .footer-msg {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 1rem;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
     </style>
   </head>
   <body>
     <h2>🟠 Create Subscription</h2>
 
-    <div class="form-box">
+    <div class="form-box" id="form-section">
       <input id="email" placeholder="Customer email" />
       <input id="plan" placeholder="Plan code (or leave empty for dynamic)" />
       <input id="auth" placeholder="Authorization code (optional)" />
       <button id="create">Create Subscription</button>
+    </div>
+
+    <div id="spinner" class="spinner" style="display: none"></div>
+
+    <!-- Receipt container -->
+    <div class="receipt-container" id="receipt" style="display: none">
+      <div class="success-icon">✅</div>
+      <h3>Subscription Created Successfully</h3>
+      <div class="divider"></div>
+      <div class="info">
+        <p>
+          <span class="label">Email:</span>
+          <span class="value" id="r-email"></span>
+        </p>
+        <p>
+          <span class="label">Plan:</span>
+          <span class="value" id="r-plan"></span>
+        </p>
+        <p>
+          <span class="label">Status:</span>
+          <span class="value" id="r-status"></span>
+        </p>
+        <p>
+          <span class="label">Subscription Code:</span>
+          <span class="value" id="r-code"></span>
+        </p>
+        <p>
+          <span class="label">Next Payment:</span>
+          <span class="value" id="r-next"></span>
+        </p>
+      </div>
+      <div class="divider"></div>
+      <div class="footer-msg">
+        Subscription active under Paystack Test Environment 💜
+      </div>
     </div>
 
     <pre id="result"></pre>
@@ -111,29 +219,66 @@
       <p><a href="index.html">← Back to Dashboard</a></p>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment-with-locales.min.js"></script>
     <script>
-      document.getElementById("create").addEventListener("click", async () => {
+      // Autofill plan code from URL
+      const params = new URLSearchParams(window.location.search);
+      const planCode = params.get("plan_code");
+      if (planCode) {
+        document.getElementById("plan").value = planCode;
+      }
+
+      const createBtn = document.getElementById("create");
+      const resultEl = document.getElementById("result");
+      const spinner = document.getElementById("spinner");
+      const receipt = document.getElementById("receipt");
+
+      createBtn.addEventListener("click", async () => {
         const email = document.getElementById("email").value.trim();
         const plan = document.getElementById("plan").value.trim();
         const auth = document.getElementById("auth").value.trim();
-        const resultEl = document.getElementById("result");
 
         if (!email) {
           resultEl.textContent = "⚠️ Please enter an email.";
           return;
         }
 
-        resultEl.textContent = "⏳ Creating subscription...";
+        resultEl.textContent = "";
+        spinner.style.display = "block";
+        receipt.style.display = "none";
 
         try {
-          const res = await fetch("/api/payments/subscriptions/create", {
+          const res = await fetch("/api/subscriptions/subscribe", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, plan, authorization: auth }),
           });
+
           const data = await res.json();
-          resultEl.textContent = JSON.stringify(data, null, 2);
+          spinner.style.display = "none";
+
+          if (data.success || data.status || data.data) {
+            const sub = data.data;
+            document.getElementById("r-email").textContent = sub.customer.email;
+            document.getElementById("r-plan").textContent = sub.plan.plan_code;
+            document.getElementById("r-status").textContent = sub.status;
+            document.getElementById("r-code").textContent =
+              sub.subscription_code;
+            document.getElementById("r-next").textContent = moment(
+              sub.next_payment_date
+            ).format("MMMM Do YYYY, h:mm:ss a");
+
+            receipt.style.display = "block";
+            resultEl.textContent = "";
+          } else {
+            console.log("Create Subscription Response Data:", data);
+            resultEl.textContent =
+              data.error.message ||
+              "❌ Failed to create subscription.\n\n" +
+                JSON.stringify(data, null, 2);
+          }
         } catch (err) {
+          spinner.style.display = "none";
           resultEl.textContent = "❌ Error creating subscription.";
         }
       });

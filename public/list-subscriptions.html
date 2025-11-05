@@ -24,18 +24,65 @@
 
       h2 {
         font-size: 1.8rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         color: #1a1a1a;
+      }
+
+      .email-form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 1.5rem;
+      }
+
+      .email-form input {
+        padding: 0.7rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        outline: none;
+        width: 250px;
+      }
+
+      .email-form button {
+        background: #ffb300;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.7rem 1.2rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.3s;
+      }
+
+      .email-form button:hover {
+        background: #ffa000;
+      }
+
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid #ddd;
+        border-top: 3px solid #ffb300;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 1.5rem auto;
+        display: none;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       table {
         border-collapse: collapse;
         width: 100%;
-        max-width: 800px;
+        max-width: 900px;
         background: #fff;
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        display: none;
       }
 
       th,
@@ -57,6 +104,21 @@
         background: #f9f9f9;
       }
 
+      .disable-btn {
+        background: #ff4d4d;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: 0.2s;
+      }
+
+      .disable-btn:hover {
+        background: #e60000;
+      }
+
       footer {
         margin-top: 2rem;
         font-size: 0.85rem;
@@ -72,10 +134,29 @@
       footer a:hover {
         text-decoration: underline;
       }
+
+      .empty-msg {
+        margin-top: 1rem;
+        color: #888;
+        font-style: italic;
+      }
     </style>
   </head>
+
   <body>
     <h2>🟡 Active Subscriptions</h2>
+
+    <form class="email-form" id="emailForm">
+      <input
+        type="email"
+        id="email"
+        placeholder="Enter customer email"
+        required
+      />
+      <button type="submit">Fetch Subscriptions</button>
+    </form>
+
+    <div id="spinner" class="spinner"></div>
 
     <table id="subsTable">
       <thead>
@@ -85,47 +166,99 @@
           <th>Plan</th>
           <th>Next Payment</th>
           <th>Code</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
+    <p id="emptyMsg" class="empty-msg"></p>
+
     <footer>
       <p><a href="index.html">← Back to Dashboard</a></p>
     </footer>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment-with-locales.min.js"></script>
     <script>
-      async function loadSubscriptions() {
-        const tbody = document.querySelector("#subsTable tbody");
-        tbody.innerHTML = "<tr><td colspan='5'>⏳ Loading...</td></tr>";
+      const form = document.getElementById("emailForm");
+      const spinner = document.getElementById("spinner");
+      const table = document.getElementById("subsTable");
+      const tbody = document.querySelector("#subsTable tbody");
+      const emptyMsg = document.getElementById("emptyMsg");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        if (!email) return alert("Please enter an email.");
+
+        spinner.style.display = "block";
+        table.style.display = "none";
+        emptyMsg.textContent = "";
 
         try {
-          const res = await fetch("/api/payments/subscriptions");
+          const res = await fetch(`/api/subscriptions/list?email=${email}`);
           const data = await res.json();
+          spinner.style.display = "none";
 
-          if (!data.success || !data.data || data.data.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='5'>⚠️ No subscriptions found.</td></tr>";
+          console.log("List Subscriptions Response Data:", data);
+
+          if (!data.status || !data.data || data.data.length === 0) {
+            emptyMsg.textContent = "⚠️ No subscriptions found for this email.";
             return;
           }
 
+          const activeSubs = data.data.filter((sub) => sub.status === "active");
+
+          if (activeSubs.length === 0) {
+            emptyMsg.textContent = "⚠️ No active subscriptions found for this email.";
+            return;
+          }
+
+          table.style.display = "table";
           tbody.innerHTML = "";
-          data.data.forEach((sub) => {
+
+          activeSubs.forEach((sub) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${sub.customer?.email || "N/A"}</td>
               <td>${sub.status}</td>
               <td>${sub.plan?.name || sub.plan_code}</td>
-              <td>${sub.next_payment_date.moment().format('MMMM Do YYYY, h:mm:ss a') || "N/A"}</td>
+              <td>${
+                sub.next_payment_date
+                  ? moment(sub.next_payment_date).format(
+                      "MMMM Do YYYY, h:mm:ss a"
+                    )
+                  : "N/A"
+              }</td>
               <td>${sub.subscription_code}</td>
+              <td>
+                <button class="disable-btn" data-email="${
+                  sub.email_token
+                }" data-code="${sub.subscription_code}">
+                  Disable
+                </button>
+              </td>
             `;
             tbody.appendChild(tr);
           });
-        } catch (err) {
-          tbody.innerHTML = "<tr><td colspan='5'>❌ Error loading subscriptions.</td></tr>";
-        }
-      }
 
-      loadSubscriptions();
+          // Add event listeners to each disable button
+          document.querySelectorAll(".disable-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              const email = e.target.dataset.email;
+              const code = e.target.dataset.code;
+
+              // redirect to delete-subscription page with prefilled query
+              window.location.href = `delete-subscription.html?email=${encodeURIComponent(
+                email
+              )}&code=${encodeURIComponent(code)}`;
+            });
+          });
+        } catch (err) {
+          spinner.style.display = "none";
+          emptyMsg.textContent = "❌ Error fetching subscriptions.";
+        }
+      });
     </script>
   </body>
 </html>

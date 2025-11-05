@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>💳 All Transactions</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f5f6fa;
+        color: #333;
+        text-align: center;
+        padding: 2rem;
+      }
+
+      h1 {
+        color: #007bff;
+      }
+
+      table {
+        width: 95%;
+        margin: 2rem auto;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #eee;
+      }
+
+      th {
+        background: #007bff;
+        color: white;
+      }
+
+      tr:hover {
+        background: #f1f1f1;
+      }
+
+      .status {
+        font-weight: bold;
+        padding: 0.3rem 0.8rem;
+        border-radius: 6px;
+      }
+
+      .success {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .failed {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .abandoned {
+        background: #ffeeba;
+        color: #856404;
+      }
+
+      button.view-btn {
+        background: #6f42c1;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      button.view-btn:hover {
+        background: #5931a5;
+      }
+
+      footer {
+        margin-top: 2rem;
+        color: #666;
+      }
+
+      /* Pagination */
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .pagination button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .pagination button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      /* Modal */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 500px;
+        text-align: left;
+        position: relative;
+      }
+
+      .modal-content h3 {
+        margin-top: 0;
+        color: #007bff;
+        text-align: center;
+      }
+
+      .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #999;
+      }
+
+      #loading {
+        font-size: 1.1rem;
+        color: #007bff;
+        margin-top: 2rem;
+      }
+    </style>
+  </head>
+
+ <body>
+  <h1>💳 All Transactions</h1>
+
+  <div id="loading">Loading transactions...</div>
+
+  <table id="transactionsTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Reference</th>
+        <th>Email</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="pagination" class="pagination"></div>
+
+  <footer>
+    Built by <strong>Delta Team</strong> — Paystack Integration Test
+  </footer>
+
+  <!-- Modal -->
+  <div id="transactionModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" id="closeModal">&times;</span>
+      <h3>Transaction Details</h3>
+      <div id="modalDetails"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script>
+    const BASE_URL = "/api/payments";
+    let currentPage = 1;
+    const limit = 10;
+
+    async function loadTransactions(page = 1) {
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("transactionsTable").style.display = "none";
+
+      try {
+        const res = await fetch(`${BASE_URL}/list?page=${page}&limit=${limit}`);
+        const response = await res.json();
+
+        if (!response.success) {
+          console.error("Error fetching transactions:", response);
+          return;
+        }
+
+        const transactions = response.data;
+        const tbody = document.querySelector("#transactionsTable tbody");
+        tbody.innerHTML = "";
+
+        transactions.forEach((tx, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${(page - 1) * limit + (i + 1)}</td>
+            <td>${tx.reference}</td>
+            <td>${tx.customer?.email || "N/A"}</td>
+            <td>${tx.currency} ${(tx.amount / 100).toLocaleString()}</td>
+            <td><span class="status ${tx.status}">${tx.status}</span></td>
+            <td>${moment(tx.paid_at || tx.created_at).format("MMM Do YYYY, h:mm:ss a")}</td>
+            <td><button class="view-btn" data-ref="${tx.reference}">View</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        setupPagination(response.meta);
+        document.querySelectorAll(".view-btn").forEach((btn) => {
+          btn.addEventListener("click", () => showDetails(btn.dataset.ref, transactions));
+        });
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("transactionsTable").style.display = "table";
+      } catch (err) {
+        console.error("Error loading transactions:", err);
+      }
+    }
+
+    function setupPagination(meta) {
+      const container = document.getElementById("pagination");
+      container.innerHTML = "";
+
+      const prevBtn = document.createElement("button");
+      prevBtn.textContent = "← Prev";
+      prevBtn.disabled = meta.page === 1;
+      prevBtn.onclick = () => loadTransactions(meta.page - 1);
+      container.appendChild(prevBtn);
+
+      const info = document.createElement("span");
+      info.textContent = ` Page ${meta.page} of ${meta.pageCount} `;
+      container.appendChild(info);
+
+      const nextBtn = document.createElement("button");
+      nextBtn.textContent = "Next →";
+      nextBtn.disabled = meta.page === meta.pageCount;
+      nextBtn.onclick = () => loadTransactions(meta.page + 1);
+      container.appendChild(nextBtn);
+    }
+
+    function showDetails(ref, allTx) {
+      const tx = allTx.find((t) => t.reference === ref);
+      if (!tx) return;
+
+      const modal = document.getElementById("transactionModal");
+      const detailsDiv = document.getElementById("modalDetails");
+
+      detailsDiv.innerHTML = `
+        <p><strong>Reference:</strong> ${tx.reference}</p>
+        <p><strong>Email:</strong> ${tx.customer?.email || "N/A"}</p>
+        <p><strong>Amount:</strong> ${tx.currency} ${(tx.amount / 100).toFixed(2)}</p>
+        <p><strong>Status:</strong> ${tx.status}</p>
+        <p><strong>Channel:</strong> ${tx.channel}</p>
+        <p><strong>Paid At:</strong> ${
+          tx.paid_at ? moment(tx.paid_at).format("MMM Do YYYY, h:mm:ss a") : "Not Paid Yet"
+        }</p>
+        <p><strong>Created:</strong> ${moment(tx.created_at).format("MMM Do YYYY, h:mm:ss a")}</p>
+      `;
+
+      modal.style.display = "flex";
+    }
+
+    document.getElementById("closeModal").addEventListener("click", () => {
+      document.getElementById("transactionModal").style.display = "none";
+    });
+
+    window.onclick = (event) => {
+      const modal = document.getElementById("transactionModal");
+      if (event.target === modal) modal.style.display = "none";
+    };
+
+    loadTransactions(currentPage);
+  </script>
+</body>
+</html>
