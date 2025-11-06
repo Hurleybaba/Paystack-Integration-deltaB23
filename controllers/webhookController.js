@@ -51,7 +51,7 @@ export const paystackWebhook = async (req, res) => {
               subscriptionCode,
               planCode,
               status,
-              nextPaymentDate: new Date(data.next_payment_date * 1000), // convert timestamp
+              nextPaymentDate: new Date(data.next_payment_date),
             });
             console.log("Subscription saved:", subscriptionCode);
           } else {

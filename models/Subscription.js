@@ -7,6 +7,6 @@ const subscriptionSchema = new mongoose.Schema({
   status: String, // active/inactive
   nextPaymentDate: Date,
   lastReminderSent: { type: Date, default: null }, // ✅ Track last reminder
-});
+}, { timestamps: true });
 
 export default mongoose.model("Subscription", subscriptionSchema);

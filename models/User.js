@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   authorizationCode: String,
   customerCode: String,
-});
+}, { timestamps: true });
 
 
 export default mongoose.model("User", userSchema);
