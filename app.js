@@ -8,6 +8,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
+import connectDB from "./config/db.js";
 
 dotenv.config();
 const app = express();
@@ -39,4 +40,5 @@ const PORT = process.env.PORT || 5001;
 
 app.listen(process.env.PORT || 5001, () => {
   console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`);
+  connectDB();
 });
