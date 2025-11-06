@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { sendEmail } from "./emailService.js";
 
 // Run daily at 8:00 AM
+/*
 export const subscriptionReminderCron = () => {
   cron.schedule("0 8 * * *", async () => {
     try {
@@ -54,6 +55,38 @@ export const subscriptionReminderCron = () => {
           sub.lastReminderSent = new Date();
           await sub.save();
         }
+      }
+    } catch (err) {
+      console.error("❌ Cron job error:", err);
+    }
+  });
+};
+*/
+
+// 2 mins reminder for testing.. no date check
+export const subscriptionReminderCron = () => {
+  cron.schedule("*/2 * * * *", async () => {
+    console.log("🕑 Running subscription reminder cron job...");
+
+    try {
+      // Fetch all active subscriptions
+      const subs = await Subscription.find({ status: "active" }).populate("user");
+
+      for (const sub of subs) {
+        if (!sub.user) continue;
+
+        // Send reminder email
+        await sendEmail(
+          sub.user.email,
+          "Subscription Renewal Reminder",
+          `Hi ${sub.user.email}, your subscription for plan ${sub.planCode} is set to renew on ${new Date(
+            sub.nextPaymentDate
+          ).toUTCString()}.`
+        );
+
+        console.log(
+          `📩 Reminder sent to ${sub.user.email} for subscription ${sub.subscriptionCode}`
+        );
       }
     } catch (err) {
       console.error("❌ Cron job error:", err);
