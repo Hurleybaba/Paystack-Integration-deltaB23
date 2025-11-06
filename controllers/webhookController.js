@@ -95,7 +95,7 @@ export const paystackWebhook = async (req, res) => {
         break;
 
       // Subscription disabled
-      case "subscription.disable":
+      case "subscription.not_renew":
         await Subscription.findOneAndUpdate(
           { subscriptionCode: event.data.subscription_code },
           { status: "inactive" }

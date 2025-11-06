@@ -3,9 +3,9 @@ import Subscription from "../models/Subscription.js";
 import User from "../models/User.js";
 import { sendEmail } from "./emailService.js";
 
-// Run daily at 8:00 AM
+// Run daily at 2:00 PM
 export const subscriptionReminderCron = () => {
-  cron.schedule("0 8 * * *", async () => {
+  cron.schedule("37 13 * * *", async () => {
     try {
       const now = new Date();
 
