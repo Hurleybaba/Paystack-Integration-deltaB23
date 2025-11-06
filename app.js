@@ -9,6 +9,7 @@ import planRoutes from "./routes/planRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 import connectDB from "./config/db.js";
+import { subscriptionReminderCron } from "./utils/subscriptionReminder.js";
 
 dotenv.config();
 const app = express();
@@ -38,7 +39,10 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(process.env.PORT || 5001, () => {
+connectDB().then( () => {
+  app.listen(process.env.PORT || 5001, () => {
   console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`);
-  connectDB();
+  subscriptionReminderCron();
+  console.log("✅ Cron Job Mounted")
 });
+})
