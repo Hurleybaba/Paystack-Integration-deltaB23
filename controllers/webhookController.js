@@ -1,57 +1,125 @@
 import crypto from "crypto";
+import User from "../models/User.js";
+import Subscription from "../models/Subscription.js";
 
-export const paystackWebhook = (req, res) => {
+export const paystackWebhook = async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
+    const signature = req.headers["x-paystack-signature"];
 
-    // ✅ req.body is a Buffer (not object)
+    // ✅ Hash incoming raw request
     const hash = crypto
       .createHmac("sha512", secret)
       .update(req.body)
       .digest("hex");
 
-    const signature = req.headers["x-paystack-signature"];
-
     if (hash !== signature) {
       console.log("❌ Invalid Paystack signature");
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid signature" });
+      return res.status(400).send("Invalid signature");
     }
 
-    // ✅ Safely parse the raw buffer
     const event = JSON.parse(req.body.toString("utf8"));
-
     console.log("✅ Paystack Webhook Event:", event.event);
 
     switch (event.event) {
-      case "subscription.create":
-        console.log("🟢 Subscription created:", event.data.subscription_code);
-        // TODO: Save to DB
-        break;
+      case "subscription.create": {
+        try {
+          const data = event.data;
+          const subscriptionCode = data.subscription_code;
+          const email = data.customer.email;
+          const planCode = data.plan.plan_code;
+          const status = data.status;
 
-      case "charge.success":
-        console.log("💰 Payment successful:", event.data.reference);
-        // TODO: Mark payment as paid in DB
-        break;
+          console.log("🟢 Subscription created:", subscriptionCode);
 
-      case "invoice.payment_failed":
-        console.log("❌ Invoice payment failed:", event.data.invoice_code);
-        // TODO: Notify user / deactivate plan
+          const user = await User.findOne({ email });
+          if (user) {
+            const exists = await Subscription.findOne({ subscriptionCode });
+            if (!exists) {
+              await Subscription.create({
+                user: user._id,
+                subscriptionCode,
+                planCode,
+                status,
+                nextPaymentDate: new Date(data.next_payment_date * 1000), // convert timestamp to Date
+              });
+            } else {
+              console.log(`ℹ️ Subscription ${subscriptionCode} already exists`);
+            }
+          }
+        } catch (err) {
+          console.error("❌ Error saving subscription:", err);
+        }
         break;
+      }
 
-      case "subscription.disable":
-        console.log("🔴 Subscription disabled:", event.data.subscription_code);
-        // TODO: Mark subscription as inactive
-        break;
+      case "charge.success": {
+        try {
+          const data = event.data;
+          const authCode = data.authorization.authorization_code;
+          const customerCode = data.customer.customer_code;
+          const email = data.customer.email;
 
-      case "subscription.enable":
-        console.log("🟢 Subscription enabled:", event.data.subscription_code);
-        // TODO: Mark subscription as active
+          console.log("💳 Charge successful:", data.reference);
+          console.log("🔐 Authorization code:", authCode);
+          console.log("🧾 Customer code:", customerCode);
+
+          await User.findOneAndUpdate(
+            { email },
+            {
+              authorizationCode: authCode,
+              customerCode: customerCode,
+            },
+            { new: true }
+          );
+        } catch (err) {
+          console.error("❌ Error saving authorization/customer code:", err);
+        }
         break;
+      }
+
+      case "invoice.payment_failed": {
+        try {
+          console.log("❌ Invoice failed:", event.data.invoice_code);
+          // Optional: Notify user or flag failed payment
+        } catch (err) {
+          console.error("❌ Error handling invoice payment failed:", err);
+        }
+        break;
+      }
+
+      case "subscription.disable": {
+        try {
+          const subscriptionCode = event.data.subscription_code;
+          console.log("🔴 Subscription disabled:", subscriptionCode);
+
+          await Subscription.findOneAndUpdate(
+            { subscriptionCode },
+            { status: "inactive" }
+          );
+        } catch (err) {
+          console.error("❌ Error disabling subscription:", err);
+        }
+        break;
+      }
+
+      case "subscription.enable": {
+        try {
+          const subscriptionCode = event.data.subscription_code;
+          console.log("🟢 Subscription enabled:", subscriptionCode);
+
+          await Subscription.findOneAndUpdate(
+            { subscriptionCode },
+            { status: "active" }
+          );
+        } catch (err) {
+          console.error("❌ Error enabling subscription:", err);
+        }
+        break;
+      }
 
       default:
-        console.log("⚠️ Unhandled Paystack event:", event.event);
+        console.log("⚠️ Unhandled event:", event.event);
     }
 
     res.sendStatus(200);
