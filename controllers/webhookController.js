@@ -2,12 +2,22 @@ import crypto from "crypto";
 import User from "../models/User.js";
 import Subscription from "../models/Subscription.js";
 
+// Helper: find user by email, create if not exists
+const findOrCreateUser = async (email) => {
+  let user = await User.findOne({ email });
+  if (!user) {
+    user = await User.create({ email });
+    console.log("🆕 New user created:", email);
+  }
+  return user;
+};
+
 export const paystackWebhook = async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
     const signature = req.headers["x-paystack-signature"];
 
-    // ✅ Hash incoming raw request
+    // Hash the raw body
     const hash = crypto
       .createHmac("sha512", secret)
       .update(req.body)
@@ -22,6 +32,7 @@ export const paystackWebhook = async (req, res) => {
     console.log("✅ Paystack Webhook Event:", event.event);
 
     switch (event.event) {
+      // Subscription created
       case "subscription.create": {
         try {
           const data = event.data;
@@ -30,22 +41,21 @@ export const paystackWebhook = async (req, res) => {
           const planCode = data.plan.plan_code;
           const status = data.status;
 
-          console.log("🟢 Subscription created:", subscriptionCode);
+          const user = await findOrCreateUser(email);
 
-          const user = await User.findOne({ email });
-          if (user) {
-            const exists = await Subscription.findOne({ subscriptionCode });
-            if (!exists) {
-              await Subscription.create({
-                user: user._id,
-                subscriptionCode,
-                planCode,
-                status,
-                nextPaymentDate: new Date(data.next_payment_date * 1000), // convert timestamp to Date
-              });
-            } else {
-              console.log(`ℹ️ Subscription ${subscriptionCode} already exists`);
-            }
+          // Create subscription if it doesn't exist
+          const exists = await Subscription.findOne({ subscriptionCode });
+          if (!exists) {
+            await Subscription.create({
+              user: user._id,
+              subscriptionCode,
+              planCode,
+              status,
+              nextPaymentDate: new Date(data.next_payment_date * 1000), // convert timestamp
+            });
+            console.log("Subscription saved:", subscriptionCode);
+          } else {
+            console.log(`ℹ️ Subscription ${subscriptionCode} already exists`);
           }
         } catch (err) {
           console.error("❌ Error saving subscription:", err);
@@ -53,70 +63,53 @@ export const paystackWebhook = async (req, res) => {
         break;
       }
 
+      // Successful charge (first payment or subscription renewal)
       case "charge.success": {
         try {
           const data = event.data;
-          const authCode = data.authorization.authorization_code;
-          const customerCode = data.customer.customer_code;
-          const email = data.customer.email;
+          const authCode = data.authorization?.authorization_code;
+          const customerCode = data.customer?.customer_code;
+          const email = data.customer?.email;
+
+          const user = await findOrCreateUser(email);
+
+          // Update authorization and customer codes
+          await User.findByIdAndUpdate(user._id, {
+            ...(authCode && { authorizationCode: authCode }),
+            ...(customerCode && { customerCode: customerCode }),
+          });
 
           console.log("💳 Charge successful:", data.reference);
           console.log("🔐 Authorization code:", authCode);
           console.log("🧾 Customer code:", customerCode);
-
-          await User.findOneAndUpdate(
-            { email },
-            {
-              authorizationCode: authCode,
-              customerCode: customerCode,
-            },
-            { new: true }
-          );
         } catch (err) {
-          console.error("❌ Error saving authorization/customer code:", err);
+          console.error("❌ Error updating authorization/customer code:", err);
         }
         break;
       }
 
-      case "invoice.payment_failed": {
-        try {
-          console.log("❌ Invoice failed:", event.data.invoice_code);
-          // Optional: Notify user or flag failed payment
-        } catch (err) {
-          console.error("❌ Error handling invoice payment failed:", err);
-        }
+      // Payment failed
+      case "invoice.payment_failed":
+        console.log("❌ Invoice failed:", event.data.invoice_code);
         break;
-      }
 
-      case "subscription.disable": {
-        try {
-          const subscriptionCode = event.data.subscription_code;
-          console.log("🔴 Subscription disabled:", subscriptionCode);
-
-          await Subscription.findOneAndUpdate(
-            { subscriptionCode },
-            { status: "inactive" }
-          );
-        } catch (err) {
-          console.error("❌ Error disabling subscription:", err);
-        }
+      // Subscription disabled
+      case "subscription.disable":
+        await Subscription.findOneAndUpdate(
+          { subscriptionCode: event.data.subscription_code },
+          { status: "inactive" }
+        );
+        console.log("🔴 Subscription disabled:", event.data.subscription_code);
         break;
-      }
 
-      case "subscription.enable": {
-        try {
-          const subscriptionCode = event.data.subscription_code;
-          console.log("🟢 Subscription enabled:", subscriptionCode);
-
-          await Subscription.findOneAndUpdate(
-            { subscriptionCode },
-            { status: "active" }
-          );
-        } catch (err) {
-          console.error("❌ Error enabling subscription:", err);
-        }
+      // Subscription enabled
+      case "subscription.enable":
+        await Subscription.findOneAndUpdate(
+          { subscriptionCode: event.data.subscription_code },
+          { status: "active" }
+        );
+        console.log("🟢 Subscription enabled:", event.data.subscription_code);
         break;
-      }
 
       default:
         console.log("⚠️ Unhandled event:", event.event);
