@@ -12,7 +12,7 @@ export const verifyPayment = async (req, res, next) => {
 
     const response = await paystack.get(`/transaction/verify/${reference}`);
 
-    console.log("Paystack verify response:", response.data);
+    console.log("Paystack verify response:", response);
 
     res.status(200).json({ success: true, data: response.data });
   } catch (err) {
@@ -35,6 +35,8 @@ export const initializePayment = async (req, res, next) => {
       currency: "NGN",
     });
 
+    console.log("Paystack init response:", response);
+
     res.status(200).json({ success: true, data: response.data });
   } catch (err) {
     console.error("Paystack init error:", err.response?.data || err.message);
@@ -51,7 +53,9 @@ export const listTransactions = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const response = await paystack.get(`/transaction?perPage=${limit}&page=${page}`);
+    const response = await paystack.get(
+      `/transaction?perPage=${limit}&page=${page}`
+    );
     console.log("Paystack list transactions response:", response.data);
     res.status(200).json({
       success: true,

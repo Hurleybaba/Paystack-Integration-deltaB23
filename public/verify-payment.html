@@ -231,7 +231,7 @@
           const res = await fetch(`/api/payments/verify/${ref}`);
           const data = await res.json();
 
-          console.log("TYPE OF DATA:", typeof data);
+          console.log("Paystack verify response:", res);
 
           console.log("FULL RESPONSE:", data);
 
