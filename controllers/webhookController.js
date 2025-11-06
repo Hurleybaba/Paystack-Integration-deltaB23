@@ -36,6 +36,7 @@ export const paystackWebhook = async (req, res) => {
       case "subscription.create": {
         try {
           const data = event.data;
+          console.log("Subscription create data inside webhooks:", data);
           const subscriptionCode = data.subscription_code;
           const email = data.customer.email;
           const planCode = data.plan.plan_code;
