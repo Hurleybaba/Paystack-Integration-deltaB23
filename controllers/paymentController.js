@@ -52,7 +52,6 @@ export const listTransactions = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const response = await paystack.get(`/transaction?perPage=${limit}&page=${page}`);
-    console.log("Paystack list transactions response:", response.data);
     res.status(200).json({
       success: true,
       data: response.data.data, // array of transactions
