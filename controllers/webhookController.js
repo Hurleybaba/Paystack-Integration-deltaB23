@@ -1,26 +1,21 @@
 import crypto from "crypto";
-import User from "../models/User.js";
-import Subscription from "../models/Subscription.js";
-
-// Helper: find user by email, create if not exists
-const findOrCreateUser = async (email) => {
-  let user = await User.findOne({ email });
-  if (!user) {
-    user = await User.create({ email });
-    console.log("🆕 New user created:", email);
-  }
-  return user;
-};
+import {
+  findOrCreateUser,
+  findSubscriptionByCode,
+  createSubscription,
+  updateUserCodes,
+  updateSubscriptionStatus,
+} from "../utils/dbUtils.js";
 
 export const paystackWebhook = async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
     const signature = req.headers["x-paystack-signature"];
 
-    // Hash the raw body
+    // Validate signature using the raw body
     const hash = crypto
       .createHmac("sha512", secret)
-      .update(req.body)
+      .update(req.rawBody)
       .digest("hex");
 
     if (hash !== signature) {
@@ -28,87 +23,57 @@ export const paystackWebhook = async (req, res) => {
       return res.status(400).send("Invalid signature");
     }
 
-    const event = JSON.parse(req.body.toString("utf8"));
+    const event = req.body;
     console.log("✅ Paystack Webhook Event:", event.event);
 
     switch (event.event) {
-      // Subscription created
       case "subscription.create": {
-        try {
-          const data = event.data;
-          console.log("Subscription create data inside webhooks:", data);
-          const subscriptionCode = data.subscription_code;
-          const email = data.customer.email;
-          const planCode = data.plan.plan_code;
-          const status = data.status;
+        const data = event.data;
+        const email = data.customer.email;
+        const user = await findOrCreateUser(email);
 
-          const user = await findOrCreateUser(email);
-
-          // Create subscription if it doesn't exist
-          const exists = await Subscription.findOne({ subscriptionCode });
-          if (!exists) {
-            await Subscription.create({
-              user: user._id,
-              subscriptionCode,
-              planCode,
-              status,
-              nextPaymentDate: new Date(data.next_payment_date),
-            });
-            console.log("Subscription saved:", subscriptionCode);
-          } else {
-            console.log(`ℹ️ Subscription ${subscriptionCode} already exists`);
-          }
-        } catch (err) {
-          console.error("❌ Error saving subscription:", err);
-        }
-        break;
-      }
-
-      // Successful charge (first payment or subscription renewal)
-      case "charge.success": {
-        try {
-          const data = event.data;
-          const authCode = data.authorization?.authorization_code;
-          const customerCode = data.customer?.customer_code;
-          const email = data.customer?.email;
-
-          const user = await findOrCreateUser(email);
-
-          // Update authorization and customer codes
-          await User.findByIdAndUpdate(user._id, {
-            ...(authCode && { authorizationCode: authCode }),
-            ...(customerCode && { customerCode: customerCode }),
+        const existingSub = await findSubscriptionByCode(data.subscription_code);
+        if (!existingSub) {
+          await createSubscription({
+            userId: user.id,
+            subscriptionCode: data.subscription_code,
+            planCode: data.plan.plan_code,
+            status: data.status,
+            nextPaymentDate: new Date(data.next_payment_date),
           });
-
-          console.log("💳 Charge successful:", data.reference);
-          console.log("🔐 Authorization code:", authCode);
-          console.log("🧾 Customer code:", customerCode);
-        } catch (err) {
-          console.error("❌ Error updating authorization/customer code:", err);
+          console.log("💾 New subscription created:", data.subscription_code);
+        } else {
+          console.log("ℹ️ Subscription already exists:", data.subscription_code);
         }
         break;
       }
 
-      // Payment failed
+      case "charge.success": {
+        const data = event.data;
+        const email = data.customer.email;
+        const user = await findOrCreateUser(email);
+
+        await updateUserCodes({
+          userId: user.id,
+          authorizationCode: data.authorization?.authorization_code,
+          customerCode: data.customer?.customer_code,
+        });
+
+        console.log("💳 Charge successful:", data.reference);
+        break;
+      }
+
       case "invoice.payment_failed":
         console.log("❌ Invoice failed:", event.data.invoice_code);
         break;
 
-      // Subscription disabled
       case "subscription.not_renew":
-        await Subscription.findOneAndUpdate(
-          { subscriptionCode: event.data.subscription_code },
-          { status: "inactive" }
-        );
+        await updateSubscriptionStatus(event.data.subscription_code, "inactive");
         console.log("🔴 Subscription disabled:", event.data.subscription_code);
         break;
 
-      // Subscription enabled
       case "subscription.enable":
-        await Subscription.findOneAndUpdate(
-          { subscriptionCode: event.data.subscription_code },
-          { status: "active" }
-        );
+        await updateSubscriptionStatus(event.data.subscription_code, "active");
         console.log("🟢 Subscription enabled:", event.data.subscription_code);
         break;
 
@@ -117,8 +82,8 @@ export const paystackWebhook = async (req, res) => {
     }
 
     res.sendStatus(200);
-  } catch (err) {
-    console.error("❌ Webhook error:", err);
+  } catch (error) {
+    console.error("❌ Webhook error:", error);
     res.sendStatus(400);
   }
 };

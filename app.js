@@ -8,13 +8,22 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
-import connectDB from "./config/db.js";
-import { subscriptionReminderCron } from "./utils/subscriptionReminder.js";
+import { subscriptionExpiryCheckerCron } from "./utils/cronJobTest.js";
 
 dotenv.config();
 const app = express();
 app.use(express.static("public"));
 app.use(cors());
+
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      if (req.originalUrl.startsWith("/api/webhooks")) {
+        req.rawBody = buf.toString(); // save raw data string
+      }
+    },
+  })
+);
 
 // Routes
 app.use("/api/webhooks", webhookRoutes);
@@ -23,7 +32,6 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/payments", paymentRoutes);
 
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
@@ -39,10 +47,8 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
 
-connectDB().then( () => {
-  app.listen(process.env.PORT || 5001, () => {
+app.listen(PORT || 5001, () => {
   console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`);
-  subscriptionReminderCron();
+  subscriptionExpiryCheckerCron();
   console.log("✅ Cron Job Mounted")
 });
-})
