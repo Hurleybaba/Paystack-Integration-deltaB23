@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Active Installments</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #eef9f5, #fdfdfd);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: #fff;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+        width: 100%;
+        max-width: 600px;
+      }
+
+      h2 {
+        text-align: center;
+        color: #0b8457;
+        margin-bottom: 25px;
+        font-weight: 600;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border: 1px solid #d8e3dc;
+        border-radius: 10px;
+        font-size: 15px;
+      }
+
+      button {
+        width: 100%;
+        background: #0b8457;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: background 0.3s ease;
+      }
+
+      button:hover {
+        background: #097046;
+      }
+
+      #message {
+        text-align: center;
+        margin-top: 10px;
+        color: #e74c3c;
+        font-weight: 500;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 25px;
+      }
+
+      th, td {
+        border: 1px solid #eee;
+        padding: 10px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      th {
+        background: #f7faf9;
+        color: #0b8457;
+      }
+
+      .view-btn {
+        background: #0b8457;
+        color: white;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 0.3s ease;
+      }
+
+      .view-btn:hover {
+        background: #086b44;
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>🔍 Find Your Installment Plans</h2>
+
+      <input type="email" id="email" placeholder="Enter your email" required />
+      <button id="fetchBtn">Fetch Active Installments</button>
+
+      <p id="message"></p>
+
+      <div id="results" class="hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>Total (₦)</th>
+              <th>Monthly (₦)</th>
+              <th>Paid (₦)</th>
+              <th>Next Payment</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="installmentTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("fetchBtn").addEventListener("click", async () => {
+        const email = document.getElementById("email").value.trim();
+        const msg = document.getElementById("message");
+        const tableBody = document.getElementById("installmentTable");
+        const results = document.getElementById("results");
+
+        msg.textContent = "";
+        results.classList.add("hidden");
+        tableBody.innerHTML = "";
+
+        if (!email) {
+          msg.textContent = "Please enter your email.";
+          return;
+        }
+
+        msg.textContent = "Fetching your active installments...";
+        msg.style.color = "#333";
+
+        try {
+          const res = await fetch(`/api/installments/active?email=${encodeURIComponent(email)}`);
+          const data = await res.json();
+
+          if (!data.success || !data.data.length) {
+            msg.textContent = "No active installment plans found.";
+            msg.style.color = "#e74c3c";
+            return;
+          }
+
+          msg.textContent = "";
+          results.classList.remove("hidden");
+
+          data.data.forEach((item) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${Number(item.total_amount).toFixed(2)}</td>
+              <td>${Number(item.monthly_payment).toFixed(2)}</td>
+              <td>${Number(item.amount_paid).toFixed(2)}</td>
+              <td>${new Date(item.next_payment_date).toLocaleDateString()}</td>
+              <td><button class="view-btn" data-id="${item.id}">View Plan</button></td>
+            `;
+            tableBody.appendChild(tr);
+          });
+
+          // handle view button clicks
+          document.querySelectorAll(".view-btn").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              const id = e.target.dataset.id;
+              window.location.href = `installment-dashboard.html?id=${id}`;
+            });
+          });
+        } catch (err) {
+          console.error(err);
+          msg.textContent = "Failed to fetch installments. Try again.";
+          msg.style.color = "#e74c3c";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -2,7 +2,7 @@ import cron from "node-cron";
 import db from "../config/db.js";
 
 export const installmentMonitorCron = () => {
-  cron.schedule("* * * * *", async () => {
+  cron.schedule("*/5 * * * *", async () => {
     console.log("🕐 Checking installment payments...");
 
     try {
@@ -17,7 +17,8 @@ export const installmentMonitorCron = () => {
       }
 
       for (const inst of result.rows) {
-        const { id, user_id, amount_paid, total_amount, next_payment_date } = inst;
+        const { id, user_id, amount_paid, total_amount, next_payment_date } =
+          inst;
 
         // Check if installment is fully paid
         if (amount_paid >= total_amount) {
@@ -34,7 +35,9 @@ export const installmentMonitorCron = () => {
         const dueDate = new Date(next_payment_date);
 
         if (today >= dueDate) {
-          console.log(`💰 Reminder: User ${user_id} should pay next installment.`);
+          console.log(
+            `💰 Reminder: User ${user_id} should pay next installment.`
+          );
 
           // Move next_payment_date to same day next month (handles month-end)
           let newMonth = dueDate.getMonth() + 1;
@@ -54,7 +57,13 @@ export const installmentMonitorCron = () => {
             `UPDATE installments SET next_payment_date = $1 WHERE id = $2`,
             [newDate, id]
           );
-          console.log(`🗓️ Next payment date updated to ${newDate.toDateString()} for user ${user_id}`);
+          console.log(
+            `🗓️ Next payment date updated to ${newDate.toDateString()} for user ${user_id}`
+          );
+        } else {
+          console.log(
+            `ℹ️ Installment ${id} for user ${user_id} is not due yet.`
+          );
         }
       }
     } catch (error) {
@@ -64,4 +73,3 @@ export const installmentMonitorCron = () => {
 
   console.log("✅ Cron Job Mounted");
 };
-

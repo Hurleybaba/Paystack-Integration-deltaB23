@@ -1,252 +1,550 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Installment Dashboard — Delta Team Paystack</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Poppins", sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background: #f4f6fb;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-      color: #333;
-    }
-
-    h2 {
-      color: #4b0082;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      width: 100%;
-      max-width: 1000px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      padding: 1.5rem;
-    }
-
-    .progress-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .progress-ring {
-      width: 140px;
-      height: 140px;
-      position: relative;
-      margin-bottom: 1rem;
-    }
-
-    .progress-ring circle {
-      fill: none;
-      stroke-width: 12;
-      transform: rotate(-90deg);
-      transform-origin: 50% 50%;
-      transition: stroke-dashoffset 0.4s ease;
-    }
-
-    .progress-ring .bg {
-      stroke: #eee;
-    }
-
-    .progress-ring .bar {
-      stroke: #6f42c1;
-      stroke-linecap: round;
-    }
-
-    .progress-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #4b0082;
-    }
-
-    .summary {
-      text-align: center;
-      font-size: 0.95rem;
-      color: #666;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      font-size: 0.95rem;
-    }
-
-    th {
-      background: #f8f9fd;
-      font-weight: 600;
-    }
-
-    .form-section {
-      margin-top: 2rem;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-      padding: 1.5rem;
-      width: 100%;
-      max-width: 500px;
-    }
-
-    .form-section h3 {
-      color: #4b0082;
-      margin-bottom: 1rem;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.9rem;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      outline: none;
-      transition: border 0.2s ease;
-    }
-
-    input:focus {
-      border-color: #6f42c1;
-      box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.1);
-    }
-
-    button {
-      width: 100%;
-      padding: 0.9rem;
-      border: none;
-      border-radius: 8px;
-      background: #6f42c1;
-      color: white;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.1s ease;
-    }
-
-    button:hover {
-      background: #5a32a3;
-      transform: translateY(-2px);
-    }
-
-    footer {
-      margin-top: 2rem;
-      font-size: 0.85rem;
-      color: #777;
-    }
-  </style>
-</head>
-<body>
-  <h2>💰 Installment Payment Dashboard</h2>
-
-  <div class="dashboard">
-    <!-- Progress Section -->
-    <div class="card progress-container">
-      <div class="progress-ring">
-        <svg width="140" height="140">
-          <circle class="bg" cx="70" cy="70" r="60"></circle>
-          <circle class="bar" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="100"></circle>
-        </svg>
-        <div class="progress-text" id="progressText">0%</div>
-      </div>
-      <div class="summary" id="summaryText">₦0 of ₦0 paid</div>
-    </div>
-
-    <!-- Payment History -->
-    <div class="card">
-      <h3 style="color:#4b0082; margin-bottom: 1rem;">Payment History</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Amount (₦)</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="paymentHistory">
-          <tr><td colspan="3" style="text-align:center; color:#888;">No payments yet</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Payment Form -->
-  <div class="form-section">
-    <h3>Make an Installment Payment</h3>
-    <input type="email" id="email" placeholder="Enter your email" required />
-    <input type="number" id="amount" placeholder="Amount (in NGN)" required />
-    <button id="payNow">Pay Now</button>
-  </div>
-
-  <footer>Built by <strong>Delta Team</strong> — Paystack Installment Tracker</footer>
-
-  <script>
-    // Simulated Data Example (Replace with API)
-    let total = 20000; // total debt
-    let paid = 6000; // amount paid so far
-
-    function updateProgress() {
-      const percent = Math.min((paid / total) * 100, 100);
-      const circle = document.querySelector(".progress-ring .bar");
-      const radius = 60;
-      const circumference = 2 * Math.PI * radius;
-      const offset = circumference - (percent / 100) * circumference;
-
-      circle.style.strokeDasharray = circumference;
-      circle.style.strokeDashoffset = offset;
-      document.getElementById("progressText").textContent = `${Math.floor(percent)}%`;
-      document.getElementById("summaryText").textContent = `₦${paid.toLocaleString()} of ₦${total.toLocaleString()} paid`;
-    }
-
-    updateProgress();
-
-    document.getElementById("payNow").addEventListener("click", async () => {
-      const email = document.getElementById("email").value.trim();
-      const amount = document.getElementById("amount").value.trim();
-
-      if (!email || !amount) return alert("Please fill in both fields.");
-
-      try {
-        const res = await fetch("/api/payments/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, amount })
-        });
-        const data = await res.json();
-        if (data?.data?.data?.authorization_url) {
-          window.location.href = data.data.data.authorization_url;
-        } else {
-          alert("Payment initialization failed.");
-        }
-      } catch (err) {
-        alert("Network error. Try again.");
+  <head>
+    <meta charset="UTF-8" />
+    <title>Installment Dashboard — Delta Team Paystack</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        padding: 0;
       }
-    });
-  </script>
-</body>
+
+      body {
+        background: #f4f6fb;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem;
+        color: #333;
+      }
+
+      h2 {
+        color: #4b0082;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        width: 100%;
+        max-width: 1000px;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        padding: 1.5rem;
+      }
+
+      .progress-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .progress-ring {
+        width: 140px;
+        height: 140px;
+        position: relative;
+        margin-bottom: 1rem;
+      }
+
+      .progress-ring circle {
+        fill: none;
+        stroke-width: 12;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dashoffset 0.4s ease;
+      }
+
+      .progress-ring .bg {
+        stroke: #eee;
+      }
+
+      .progress-ring .bar {
+        stroke: #6f42c1;
+        stroke-linecap: round;
+      }
+
+      .progress-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #4b0082;
+      }
+
+      .summary {
+        text-align: center;
+        font-size: 0.95rem;
+        color: #666;
+        margin-bottom: 1.5rem;
+      }
+
+      /* Payment Details Section */
+      .payment-details {
+        width: 100%;
+        margin-top: 1rem;
+      }
+
+      .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .detail-item:last-child {
+        border-bottom: none;
+      }
+
+      .detail-label {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+      }
+
+      .detail-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #4b0082;
+      }
+
+      .detail-value.remaining {
+        color: #e74c3c;
+      }
+
+      .detail-value.next-payment {
+        color: #27ae60;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        font-size: 0.95rem;
+      }
+
+      th {
+        background: #f8f9fd;
+        font-weight: 600;
+      }
+
+      .form-section {
+        margin-top: 2rem;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        padding: 1.5rem;
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+      }
+
+      .form-section h3 {
+        color: #4b0082;
+        margin-bottom: 1rem;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.9rem;
+        border: none;
+        border-radius: 8px;
+        background: #6f42c1;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s ease, transform 0.1s ease;
+      }
+
+      button:hover {
+        background: #5a32a3;
+        transform: translateY(-2px);
+      }
+
+      footer {
+        margin-top: 2rem;
+        font-size: 0.85rem;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>💰 Installment Payment Dashboard</h2>
+
+    <div class="dashboard">
+      <!-- Progress Section -->
+      <div class="card progress-container">
+        <div class="progress-ring">
+          <svg width="140" height="140">
+            <circle class="bg" cx="70" cy="70" r="60"></circle>
+            <circle
+              class="bar"
+              cx="70"
+              cy="70"
+              r="60"
+              stroke-dasharray="377"
+              stroke-dashoffset="100"
+            ></circle>
+          </svg>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
+        <div class="summary" id="summaryText">₦0 of ₦0 paid</div>
+
+        <!-- Payment Details Section -->
+        <div class="payment-details">
+          <div class="detail-item">
+            <span class="detail-label">Last Payment Date:</span>
+            <span class="detail-value" id="lastPaymentDate">-</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Next Payment Date:</span>
+            <span class="detail-value next-payment" id="nextPaymentDate"
+              >-</span
+            >
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Remaining Amount:</span>
+            <span class="detail-value remaining" id="remainingAmount">₦0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment History -->
+      <div class="card">
+        <h3 style="color: #4b0082; margin-bottom: 1rem">Payment History</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Amount (₦)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="paymentHistory">
+            <tr>
+              <td colspan="3" style="text-align: center; color: #888">
+                No payments yet
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Payment Form - Simplified to just the button -->
+    <div class="form-section">
+      <h3>Make an Installment Payment</h3>
+      <button id="payNow">Pay Now</button>
+    </div>
+
+    <footer>
+      Built by <strong>Delta Team</strong> — Paystack Installment Tracker
+    </footer>
+
+    <script>
+      // Declare these as global variables
+      let total = 0;
+      let paid = 0;
+      let lastPaymentDate = null;
+      let nextPaymentDate = null;
+
+      // Run on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+      });
+
+      async function initializePage() {
+        await fetchInstallmentData();
+        updateProgress();
+        updatePaymentDetails();
+        await fetchPaymentHistory();
+      }
+
+      async function fetchInstallmentData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const installmentId = urlParams.get("id");
+
+        if (!installmentId) {
+          console.error("No installment ID provided in URL.");
+          window.alert("No installment ID provided in URL.");
+          return;
+        }
+
+        try {
+          console.log("Fetching installment data for ID:", installmentId);
+          const response = await fetch(`/api/installments/${installmentId}`);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Fetched installment data:", data);
+
+          if (!data.success) {
+            window.alert("Failed to load installment data.");
+            return;
+          }
+
+          const installment = data.data;
+          total = Number(installment.total_amount);
+          paid = Number(installment.amount_paid);
+
+          // Extract dates from installment data (you'll need to adjust these based on your API response)
+          lastPaymentDate = installment.last_payment_date || null;
+          nextPaymentDate =
+            installment.next_payment_date || calculateNextPaymentDate();
+
+          // Update UI with the fetched data
+          updateProgress();
+          updatePaymentDetails();
+        } catch (error) {
+          console.error("Error fetching installment data:", error);
+          window.alert(
+            "Error fetching installment data. Please check the console."
+          );
+        }
+      }
+
+      function calculateNextPaymentDate() {
+        // Calculate next payment date (30 days from now as default)
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + 30);
+        return nextDate;
+      }
+
+      function formatDate(date) {
+        if (!date) return "-";
+
+        const dateObj = new Date(date);
+        return dateObj.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      function updatePaymentDetails() {
+        const remainingAmount = total - paid;
+
+        // Update last payment date
+        const lastPaymentElement = document.getElementById("lastPaymentDate");
+        if (lastPaymentElement) {
+          lastPaymentElement.textContent = formatDate(lastPaymentDate);
+        }
+
+        // Update next payment date
+        const nextPaymentElement = document.getElementById("nextPaymentDate");
+        if (nextPaymentElement) {
+          nextPaymentElement.textContent = formatDate(nextPaymentDate);
+        }
+
+        // Update remaining amount
+        const remainingAmountElement =
+          document.getElementById("remainingAmount");
+        if (remainingAmountElement) {
+          remainingAmountElement.textContent = `₦${remainingAmount.toLocaleString()}`;
+        }
+      }
+
+      async function fetchPaymentHistory() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const installmentId = urlParams.get("id");
+
+        if (!installmentId) {
+          console.error("No installment ID provided in URL.");
+          return;
+        }
+
+        const response = await fetch(
+          `/api/installments/${installmentId}/payments`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Fetched payment history:", data);
+
+        if (!data.success) {
+          window.alert("Failed to load payment history.");
+          return;
+        }
+
+        updatePaymentHistoryTable(data.data);
+
+        // Update UI with the fetched payment history
+      }
+
+      function updateProgress() {
+        if (total === 0) {
+          console.warn("Total amount is zero, cannot calculate progress");
+          return;
+        }
+
+        const percent = Math.min((paid / total) * 100, 100);
+        const circle = document.querySelector(".progress-ring .bar");
+
+        if (circle) {
+          const radius = 60;
+          const circumference = 2 * Math.PI * radius;
+          const offset = circumference - (percent / 100) * circumference;
+
+          circle.style.strokeDasharray = circumference;
+          circle.style.strokeDashoffset = offset;
+        }
+
+        const progressText = document.getElementById("progressText");
+        const summaryText = document.getElementById("summaryText");
+
+        if (progressText) {
+          progressText.textContent = `${Math.floor(percent)}%`;
+        }
+
+        if (summaryText) {
+          summaryText.textContent = `₦${paid.toLocaleString()} of ₦${total.toLocaleString()} paid`;
+        }
+      }
+
+      function updatePaymentHistoryTable(payments) {
+        const tbody = document.getElementById("paymentHistory");
+
+        if (!payments || payments.length === 0) {
+          tbody.innerHTML = `
+        <tr>
+          <td colspan="3" style="text-align: center; color: #888">
+            No payments yet
+          </td>
+        </tr>
+      `;
+          return;
+        }
+
+        // Clear existing rows
+        tbody.innerHTML = "";
+
+        // Add each payment as a row
+        payments.forEach((payment) => {
+          const row = document.createElement("tr");
+
+          // Format the date - handle invalid dates gracefully
+          let formattedDate = "Invalid Date";
+          try {
+            // Try different possible date fields from your API
+            const dateString =
+              payment.paid_at ||
+              payment.created_at ||
+              payment.date ||
+              payment.payment_date;
+            if (dateString) {
+              const paymentDate = new Date(dateString);
+              if (!isNaN(paymentDate.getTime())) {
+                // Check if date is valid
+                formattedDate = paymentDate.toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+              }
+            }
+          } catch (error) {
+            console.error("Error formatting date:", error);
+            formattedDate = "Invalid Date";
+          }
+
+          // Format the amount - handle different amount field names
+          const amount =
+            payment.amount ||
+            payment.amount_paid ||
+            payment.payment_amount ||
+            0;
+          const formattedAmount = `₦${Number(amount).toLocaleString()}`;
+
+          // Determine status and color
+          let status = payment.status || "completed";
+          let statusColor = "#27ae60"; // green for completed/success
+
+          if (status.toLowerCase() === "failed") {
+            statusColor = "#e74c3c"; // red for failed
+          } else if (status.toLowerCase() === "pending") {
+            statusColor = "#f39c12"; // orange for pending
+          }
+
+          row.innerHTML = `
+        <td>${formattedDate}</td>
+        <td>${formattedAmount}</td>
+        <td style="color: ${statusColor}; font-weight: 500">
+          ${status.charAt(0).toUpperCase() + status.slice(1)}
+        </td>
+      `;
+
+          tbody.appendChild(row);
+        });
+      }
+
+      // Payment button event listener - simplified without email
+      document.addEventListener("DOMContentLoaded", function () {
+        const payNowBtn = document.getElementById("payNow");
+
+        if (payNowBtn) {
+          payNowBtn.addEventListener("click", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const installmentId = urlParams.get("id");
+
+            if (!installmentId) {
+              console.error("No installment ID provided in URL.");
+              window.alert("No installment ID provided in URL.");
+              return;
+            }
+            try {
+              const res = await fetch("/api/installments/auto-pay", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: installmentId,
+                }),
+              });
+
+              const data = await res.json();
+
+              console.log("Data: ", data);
+
+              if (data.success) {
+                await fetchInstallmentData();
+                updateProgress();
+                updatePaymentDetails();
+                await fetchPaymentHistory();
+                alert(data.message);
+              } else {
+                alert(data.message);
+              }
+            } catch (err) {
+              console.error("Payment error:", err);
+              alert("Network error. Try again.");
+            }
+          });
+        }
+      });
+    </script>
+  </body>
 </html>

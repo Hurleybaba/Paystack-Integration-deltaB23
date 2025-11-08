@@ -20,6 +20,7 @@
         align-items: center;
         justify-content: center;
         padding: 20px;
+        margin: 0;
       }
 
       .container {
@@ -30,6 +31,8 @@
         width: 100%;
         max-width: 420px;
         text-align: center;
+        position: relative;
+        z-index: 1;
       }
 
       h2 {
@@ -75,6 +78,11 @@
         background: #097046;
       }
 
+      button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
       #message {
         margin-top: 15px;
         font-weight: 500;
@@ -87,6 +95,85 @@
       .error {
         color: #e74c3c;
       }
+
+      /* Modal Styles */
+      #paymentModal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      #paymentModal.active {
+        display: flex;
+        opacity: 1;
+      }
+
+      .modal-content {
+        background: #fff;
+        padding: 30px;
+        border-radius: 15px;
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        transform: translateY(-30px);
+        transition: transform 0.3s ease;
+      }
+
+      #paymentModal.active .modal-content {
+        transform: translateY(0);
+      }
+
+      .modal-content h3 {
+        margin-bottom: 15px;
+        color: #0b8457;
+      }
+
+      .modal-content p {
+        margin-bottom: 20px;
+        font-size: 16px;
+      }
+
+      .modal-content button {
+        padding: 10px 20px;
+        font-size: 15px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        margin: 0 5px;
+        min-width: 100px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-bottom: 5px;
+      }
+
+      #acceptPayment {
+        background: #0b8457;
+        color: #fff;
+        transition: background 0.3s ease;
+      }
+
+      #acceptPayment:hover {
+        background: #097046;
+      }
+
+      #cancelPayment {
+        background: #e74c3c;
+        color: #fff;
+        transition: background 0.3s ease;
+      }
+
+      #cancelPayment:hover {
+        background: #c0392b;
+      }
     </style>
   </head>
   <body>
@@ -94,56 +181,195 @@
       <h2>💳 Set Up Installment Payment</h2>
       <form id="installmentForm">
         <input type="email" id="email" placeholder="Your Email" required />
-        <input type="number" id="totalAmount" placeholder="Total Amount (₦)" required />
-        <input type="number" id="monthlyPayment" placeholder="Monthly Payment (₦)" required />
-        <button type="submit">Create Installment</button>
+        <input
+          type="number"
+          id="totalAmount"
+          placeholder="Total Amount (₦)"
+          min="1"
+          required
+        />
+        <input
+          type="number"
+          id="monthlyPayment"
+          placeholder="Monthly Payment (₦)"
+          min="1"
+          required
+        />
+        <button type="submit" id="submitBtn">Create Installment</button>
       </form>
       <p id="message"></p>
     </div>
 
+    <!-- Modal -->
+    <div id="paymentModal">
+      <div class="modal-content">
+        <h3>Initial Payment</h3>
+        <p id="modalMessage"></p>
+        <button id="acceptPayment">Accept</button>
+        <button id="cancelPayment">Cancel</button>
+      </div>
+    </div>
+
     <script>
-      document
-        .getElementById("installmentForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const email = document.getElementById("email").value;
-          const totalAmount = +document.getElementById("totalAmount").value;
-          const monthlyPayment = +document.getElementById("monthlyPayment").value;
-          const msg = document.getElementById("message");
+      const installmentForm = document.getElementById("installmentForm");
+      const submitBtn = document.getElementById("submitBtn");
+      const msg = document.getElementById("message");
+      const modal = document.getElementById("paymentModal");
+      const modalMessage = document.getElementById("modalMessage");
+      const acceptBtn = document.getElementById("acceptPayment");
+      const cancelBtn = document.getElementById("cancelPayment");
 
-          msg.textContent = "Creating installment...";
-          msg.className = "";
+      let currentInstallment = null;
 
-          try {
-            const res = await fetch("/api/installments", {
+      // Form validation
+      function validateForm(email, totalAmount, monthlyPayment) {
+        if (!email || !totalAmount || !monthlyPayment) {
+          return "All fields are required";
+        }
+
+        if (!isValidEmail(email)) {
+          return "Please enter a valid email address";
+        }
+
+        if (monthlyPayment >= totalAmount) {
+          return "Monthly payment must be less than total amount";
+        }
+
+        if (monthlyPayment <= 0 || totalAmount <= 0) {
+          return "Amounts must be positive values";
+        }
+
+        return null;
+      }
+
+      function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      }
+
+      installmentForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const totalAmount = +document.getElementById("totalAmount").value;
+        const monthlyPayment = +document.getElementById("monthlyPayment").value;
+
+        // Validate form
+        const validationError = validateForm(
+          email,
+          totalAmount,
+          monthlyPayment
+        );
+        if (validationError) {
+          msg.textContent = validationError;
+          msg.className = "error";
+          return;
+        }
+
+        // Show modal for initial payment BEFORE API call
+        modalMessage.textContent = `You'll be charged ₦${monthlyPayment.toLocaleString()} now. Do you accept?`;
+        modal.classList.add("active");
+
+        // Store the form data for later use
+        currentInstallment = {
+          email,
+          totalAmount,
+          monthlyPayment,
+        };
+      });
+
+      // Accept initial payment - now includes the API call
+      acceptBtn.addEventListener("click", async () => {
+        if (!currentInstallment) return;
+
+        acceptBtn.disabled = true;
+        cancelBtn.disabled = true;
+
+        // Show loading state
+        modalMessage.textContent = "Processing payment...";
+        acceptBtn.style.display = "none";
+        cancelBtn.style.display = "none";
+
+        try {
+          const res = await fetch("/api/installments", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: currentInstallment.email,
+              totalAmount: currentInstallment.totalAmount,
+              monthlyPayment: currentInstallment.monthlyPayment,
+            }),
+          });
+
+          const data = await res.json();
+
+          console.log("Installment creation response:", data);
+
+          console.log("id for payment:", data.data.id);
+
+          if (data.success) {
+            const paymentRes = await fetch("/api/installments/auto-pay", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+              },
               body: JSON.stringify({
-                email,
-                totalAmount,
-                monthlyPayment,
+                email: currentInstallment.email,
+                id: data.data.id,
+                firstTime: true,
               }),
             });
 
-            const data = await res.json();
+            const paymentData = await paymentRes.json();
 
-            console.log("Response Status:", data);
+            console.log("Initial payment response:", paymentData);
 
-            if (data.success) {
-              msg.textContent = data.message;
-              msg.className = "success";
-
-              document.getElementById("installmentForm").reset();
-              //redirect to initial payment page
+            if (paymentData?.chargeData?.data?.authorization_url) {
+              msg.textContent = "Redirecting to Paystack...";
+              window.location.href =
+                paymentData.chargeData.data.authorization_url;
             } else {
-              msg.textContent = data.message || "Error creating installment";
+              msg.textContent =
+                paymentData.message || "Error processing initial payment";
               msg.className = "error";
+              alert("❌ Payment failed.");
+              return;
             }
-          } catch (err) {
-            msg.textContent = "Network error. Please try again.";
+
+            msg.textContent = data.message;
+            msg.className = "success";
+            alert("✅ Initial payment successful!");
+          } else {
+            msg.textContent = data.message || "Error creating installment";
             msg.className = "error";
+            alert("❌ Payment failed.");
           }
-        });
+        } catch (err) {
+          msg.textContent = "Network error. Please try again.";
+          msg.className = "error";
+          alert("Network error. Please try again.");
+        } finally {
+          modal.classList.remove("active");
+          installmentForm.reset();
+          currentInstallment = null;
+
+          // Reset modal buttons
+          acceptBtn.disabled = false;
+          cancelBtn.disabled = false;
+          acceptBtn.style.display = "inline-block";
+          cancelBtn.style.display = "inline-block";
+        }
+      });
+
+      // Cancel modal
+      cancelBtn.addEventListener("click", () => {
+        modal.classList.remove("active");
+        currentInstallment = null;
+        msg.textContent = "Payment cancelled.";
+        msg.className = "error";
+      });
     </script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 import { findOrCreateUser } from "../utils/dbUtils.js";
 import pool from "../config/db.js";
 import { v4 as uuidv4 } from "uuid";
-
+import paystack from "../config/paystackConfig.js";
 // POST /api/installments
 export const createInstallment = async (req, res) => {
   try {
@@ -50,6 +50,92 @@ export const createInstallment = async (req, res) => {
   }
 };
 
+export const getAllActiveInstallments = async (req, res) => {
+  const { email } = req.query;
+  try {
+    const user = await pool.query("SELECT id FROM users WHERE email = $1", [
+      email,
+    ]);
+
+    if (!user.rows.length) {
+      return res.json({ success: false, message: "User not found", data: [] });
+    }
+
+    const userId = user.rows[0].id;
+    const result = await pool.query(
+      `SELECT * FROM installments WHERE user_id = $1 AND status = 'active'`,
+      [userId]
+    );
+
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error", data: [] });
+  }
+};
+
+export const getInstallmentDetails = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT * FROM installments WHERE id = $1`,
+      [id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Installment not found.",
+      });
+    }
+
+    const installment = result.rows[0];
+
+    console.log("Fetched installment details:", installment);
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.error("Error fetching installment details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch installment details.",
+      error: error.message,
+    });
+  }
+};
+
+export const getPaymentHistory = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT * FROM installment_payments WHERE installment_id = $1 ORDER BY payment_date DESC`,
+      [id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No payment history found for this installment.",
+        data: [],
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Error fetching payment history:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch payment history.",
+      error: error.message,
+    });
+  }
+};
 //when user pays the installment manually
 export const payInstallment = async (req, res) => {
   try {
@@ -130,15 +216,38 @@ export const payInstallment = async (req, res) => {
 //when we automatically charge the user for installment
 export const autoChargeInstallment = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, id, firstTime } = req.body;
 
-    const user = await findOrCreateUser(email);
-    const userId = user.id;
+    let userId;
+    let userEmail;
+    let authorization_code;
+
+    if (email) {
+      const user = await findOrCreateUser(email);
+      userId = user.id;
+      userEmail = email;
+      authorization_code = user.authorization_code;
+    } else {
+      const result = await pool.query(
+        `SELECT * FROM installments WHERE id = $1`,
+        [id]
+      );
+
+      console.log("USERR: ", result.rows[0]);
+
+      userId = result.rows[0].user_id;
+
+      const result2 = await pool.query(`SELECT * FROM users WHERE id = $1`, [
+        userId,
+      ]);
+      userEmail = result2.rows[0].email;
+      authorization_code = result2.rows[0].authorization_code;
+    }
 
     // 1️⃣ Check if installment exists for user
     const installment = await pool.query(
-      `SELECT * FROM installments WHERE user_id = $1`,
-      [userId]
+      `SELECT * FROM installments WHERE user_id = $1 AND id = $2`,
+      [userId, id]
     );
 
     if (!installment.rows.length) {
@@ -165,50 +274,57 @@ export const autoChargeInstallment = async (req, res) => {
       });
     }
 
-    // 4️⃣ Attempt to charge the user (using saved authorization)
-    const authorization = record.authorization_code; // assume we stored this from the first payment
-    if (!authorization) {
-      return res.status(400).json({
-        success: false,
-        message: "No authorization found for recurring charge.",
-      });
+    console.log("Auto-charging user:", userEmail, "Amount:", chargeAmount);
+
+    // 4️⃣ Attempt to charge the user via Paystack
+
+    let url = "";
+    if (firstTime) {
+      url = "transaction/initialize";
+    } else {
+      url = "/transaction/charge_authorization";
     }
+    const chargeResponse = await paystack.post(url, {
+      email: userEmail,
+      amount: Number(chargeAmount) * 100, // Paystack expects kobo
+      currency: "NGN",
+      authorization_code,
+      callback_url:
+        "https://celesta-untutored-situationally.ngrok-free.dev/installment-dashboard.html", // Replace with your actual callback URL
+    });
 
-    const chargeResponse = await paystack.post(
-      "/transaction/charge_authorization",
-      {
-        email,
-        amount: chargeAmount * 100, // Paystack expects kobo
-        authorization_code: authorization,
-      }
-    );
+    console.log("Charge Response:", chargeResponse.data);
 
-    const chargeData = chargeResponse.data.data;
+    const chargeData = chargeResponse.data;
 
     // 5️⃣ Update installment progress if charge succeeded
-    if (chargeResponse.data.status && chargeData.status === "success") {
-      const newPaid = record.amount_paid + chargeAmount;
+    if (chargeData.status === true) {
+      console.log("Charge successful for user:", userEmail);
+      const newPaid = Number(record.amount_paid) + Number(chargeAmount);
+
+      console.log(record.amount_paid, chargeAmount);
+      console.log("Updating installment record. New paid amount:", newPaid);
 
       // Update record in DB
       await pool.query(
         `UPDATE installments 
          SET amount_paid = $1, last_payment_date = NOW() 
-         WHERE user_id = $2`,
-        [newPaid, userId]
+         WHERE user_id = $2 AND id = $3`,
+        [newPaid, userId, record.id]
       );
 
       // If fully paid, mark as complete
       if (newPaid >= record.total_amount) {
         await pool.query(
-          `UPDATE installments SET status = 'completed' WHERE user_id = $1`,
-          [userId]
+          `UPDATE installments SET status = 'completed' WHERE user_id = $1 AND id = $2`,
+          [userId, record.id]
         );
       }
 
       await pool.query(
-        `INSERT INTO installment_payments (user_id, installment_id, amount, payment_date)
-       VALUES ($1, $2, $3, NOW())`,
-        [userId, record.id, chargeAmount]
+        `INSERT INTO installment_payments (id, user_id, installment_id, amount, payment_date)
+       VALUES ($1, $2, $3, $4, NOW())`,
+        [uuidv4(), userId, record.id, chargeAmount]
       );
 
       return res.status(200).json({
@@ -225,7 +341,7 @@ export const autoChargeInstallment = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("Auto Charge Error:", err.message);
+    console.error("Auto Charge Error:", err);
     res.status(500).json({
       success: false,
       message: "Server error processing installment auto-charge.",
