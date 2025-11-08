@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Installment Payment Setup</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #e9f9f2, #f8fffb);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+      }
+
+      h2 {
+        color: #0b8457;
+        margin-bottom: 20px;
+        font-weight: 600;
+      }
+
+      form {
+        margin-top: 15px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 15px;
+        margin: 10px 0;
+        border: 1px solid #d8e3dc;
+        border-radius: 10px;
+        font-size: 15px;
+        transition: border-color 0.3s ease;
+      }
+
+      input:focus {
+        border-color: #0b8457;
+        outline: none;
+      }
+
+      button {
+        width: 100%;
+        background: #0b8457;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: background 0.3s ease;
+        margin-top: 10px;
+      }
+
+      button:hover {
+        background: #097046;
+      }
+
+      #message {
+        margin-top: 15px;
+        font-weight: 500;
+      }
+
+      .success {
+        color: #0b8457;
+      }
+
+      .error {
+        color: #e74c3c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>💳 Set Up Installment Payment</h2>
+      <form id="installmentForm">
+        <input type="email" id="email" placeholder="Your Email" required />
+        <input type="number" id="totalAmount" placeholder="Total Amount (₦)" required />
+        <input type="number" id="monthlyPayment" placeholder="Monthly Payment (₦)" required />
+        <button type="submit">Create Installment</button>
+      </form>
+      <p id="message"></p>
+    </div>
+
+    <script>
+      document
+        .getElementById("installmentForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("email").value;
+          const totalAmount = +document.getElementById("totalAmount").value;
+          const monthlyPayment = +document.getElementById("monthlyPayment").value;
+          const msg = document.getElementById("message");
+
+          msg.textContent = "Creating installment...";
+          msg.className = "";
+
+          try {
+            const res = await fetch("/api/installments", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email,
+                totalAmount,
+                monthlyPayment,
+              }),
+            });
+
+            const data = await res.json();
+
+            console.log("Response Status:", data);
+
+            if (data.success) {
+              msg.textContent = data.message;
+              msg.className = "success";
+
+              document.getElementById("installmentForm").reset();
+              //redirect to initial payment page
+            } else {
+              msg.textContent = data.message || "Error creating installment";
+              msg.className = "error";
+            }
+          } catch (err) {
+            msg.textContent = "Network error. Please try again.";
+            msg.className = "error";
+          }
+        });
+    </script>
+  </body>
+</html>

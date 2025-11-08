@@ -8,6 +8,8 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
+import installmentRoutes from "./routes/installmentRoutes.js";
+import { installmentMonitorCron } from "./utils/installmentCronJob.js";
 import { subscriptionExpiryCheckerCron } from "./utils/cronJobTest.js";
 
 dotenv.config();
@@ -31,6 +33,7 @@ app.use(bodyParser.json());
 app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/installments", installmentRoutes);
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -49,6 +52,6 @@ const PORT = process.env.PORT || 5001;
 
 app.listen(PORT || 5001, () => {
   console.log(`🚀 Server is running on port ${process.env.PORT || 5001}`);
-  subscriptionExpiryCheckerCron();
-  console.log("✅ Cron Job Mounted")
+  // subscriptionExpiryCheckerCron();
+  installmentMonitorCron();
 });
