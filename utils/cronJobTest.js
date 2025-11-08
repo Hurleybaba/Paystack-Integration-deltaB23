@@ -40,12 +40,22 @@ export const subscriptionExpiryCheckerCron = () => {
           sub;
 
         // 📧 Send warning or reminder email
+        // await sendEmail(
+        //   email,
+        //   "Subscription Expiring Soon",
+        //   `Hi ${email}, your subscription for plan ${plan_code} will expire at ${new Date(
+        //     next_payment_date
+        //   ).toLocaleTimeString()}. Please ensure your payment method is active.`
+        // );
         await sendEmail(
           email,
           "Subscription Expiring Soon",
-          `Hi ${email}, your subscription for plan ${plan_code} will expire at ${new Date(
-            next_payment_date
-          ).toLocaleTimeString()}. Please ensure your payment method is active.`
+          `
+          <h3>Hi ${email},</h3>
+          <p>Your subscription for plan <strong>${plan_code}</strong> will expire at 
+          <strong>${new Date(next_payment_date).toLocaleTimeString()}</strong>.</p>
+           <p>Please ensure your payment method is active to avoid interruption.</p>
+          `
         );
 
         console.log(
